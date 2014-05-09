@@ -144,3 +144,6 @@ samples-and-tests/zencontact/precompiled
 !framework/src/play/db
 .idea
 *~
+
+precompiled/
+target/
