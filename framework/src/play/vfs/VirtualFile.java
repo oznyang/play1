@@ -222,8 +222,9 @@ public class VirtualFile {
 
     public static VirtualFile search(Collection<VirtualFile> roots, String path) {
         for (VirtualFile file : roots) {
-            if (file.child(path).exists()) {
-                return file.child(path);
+            VirtualFile child = file.child(path);
+            if (child.exists()) {
+                return child;
             }
         }
         return null;

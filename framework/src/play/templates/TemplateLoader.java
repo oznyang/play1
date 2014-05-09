@@ -4,11 +4,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.Collections;
 
 import play.Logger;
 import play.Play;
+import play.PrecompiledLoader;
 import play.vfs.VirtualFile;
 import play.exceptions.TemplateCompilationException;
 import play.exceptions.TemplateNotFoundException;
@@ -23,7 +26,7 @@ public class TemplateLoader {
      * See getUniqueNumberForTemplateFile() for more info
      */
     private static AtomicLong nextUniqueNumber = new AtomicLong(1000);//we start on 1000
-    private static Map<String, String> templateFile2UniqueNumber = Collections.synchronizedMap(new HashMap<String, String>());
+    private static ConcurrentMap<String, String> templateFile2UniqueNumber = new ConcurrentHashMap<String, String>();
 
     /**
      * All loaded templates is cached in the templates-list using a key.
@@ -46,7 +49,7 @@ public class TemplateLoader {
         if (uniqueNumber == null) {
             //this is the first time we see this path - must assign a unique number to it.
             uniqueNumber = Long.toString(nextUniqueNumber.getAndIncrement());
-            templateFile2UniqueNumber.put(path, uniqueNumber);
+            templateFile2UniqueNumber.putIfAbsent(path, uniqueNumber);
         }
         return uniqueNumber;
     }
@@ -64,34 +67,37 @@ public class TemplateLoader {
         }
 
         // Use default engine
-        final String key = getUniqueNumberForTemplateFile(file.relativePath());
-        if (!templates.containsKey(key) || templates.get(key).compiledTemplate == null) {
+        String relativePath = file.relativePath();
+        String key = getUniqueNumberForTemplateFile(relativePath);
+        BaseTemplate template=templates.get(key);
+        if (template == null || template.compiledTemplate == null) {
+            template = PrecompiledLoader.loadTemplate(file);
+            if (template != null) {
+                templates.put(key, template);
+                return template;
+            }
             if (Play.usePrecompiled) {
-                BaseTemplate template = new GroovyTemplate(file.relativePath().replaceAll("\\{(.*)\\}", "from_$1").replace(":", "_").replace("..", "parent"), file.contentAsString());
+                template = new GroovyTemplate(relativePath.replaceAll("\\{(.*)\\}", "from_$1").replace(":", "_").replace("..", "parent"), file);
                 try {
                     template.loadPrecompiled();
                     templates.put(key, template);
                     return template;
                 } catch(Exception e) {
-                    Logger.warn("Precompiled template %s not found, trying to load it dynamically...", file.relativePath());
+                    Logger.warn("Precompiled template %s not found, trying to load it dynamically...", relativePath);
                 }
             }
-            BaseTemplate template = new GroovyTemplate(file.relativePath(), file.contentAsString());
+            template = new GroovyTemplate(relativePath, file);
             if (template.loadFromCache()) {
                 templates.put(key, template);
             } else {
-                templates.put(key, new GroovyTemplateCompiler().compile(file));
+                templates.put(key, template = new GroovyTemplateCompiler().compile(file));
             }
         } else {
-            BaseTemplate template = templates.get(key);
-            if (Play.mode == Play.Mode.DEV && template.timestamp < file.lastModified()) {
-                templates.put(key, new GroovyTemplateCompiler().compile(file));
+            if (Play.mode.isDev() && template.timestamp < file.lastModified()) {
+                templates.put(key, template = new GroovyTemplateCompiler().compile(file));
             }
         }
-        if (templates.get(key) == null) {
-            throw new TemplateNotFoundException(file.relativePath());
-        }
-        return templates.get(key);
+        return template;
     }
 
     /**
@@ -163,37 +169,36 @@ public class TemplateLoader {
      * @return The executable template
      */
     public static Template load(String path) {
-        Template template = null;
-        for (VirtualFile vf : Play.templatesPath) {
-            if (vf == null) {
-                continue;
+        BaseTemplate template = templates.get(path);
+        if (template == null || template.compiledTemplate == null) {
+            template = PrecompiledLoader.loadTemplate(path);
+            if (template != null) {
+                templates.put(path, template);
+                return template;
             }
+        } else {
+            if (Play.mode.isDev() && template.isModified()) {
+                templates.put(path, template = new GroovyTemplateCompiler().compile(template.sourceFile));
+            }
+            return template;
+        }
+
+        for (VirtualFile vf : Play.templatesPath) {
             VirtualFile tf = vf.child(path);
             if (tf.exists()) {
-                template = TemplateLoader.load(tf);
-                break;
+                template = (BaseTemplate) TemplateLoader.load(tf);
+                templates.put(path, template);
+                return template;
             }
         }
-        /*
-        if (template == null) {
-        //When using the old 'key = (file.relativePath().hashCode() + "").replace("-", "M");',
-        //the next line never return anything, since all values written to templates is using the
-        //above key.
-        //when using just file.relativePath() as key, the next line start returning stuff..
-        //therefor I have commented it out.
-        template = templates.get(path);
+
+        VirtualFile tf = Play.getVirtualFile(path);
+        if (tf != null && tf.exists()) {
+            template = (BaseTemplate) TemplateLoader.load(tf);
+            templates.put(path, template);
+            return template;
         }
-         */
-        //TODO: remove ?
-        if (template == null) {
-            VirtualFile tf = Play.getVirtualFile(path);
-            if (tf != null && tf.exists()) {
-                template = TemplateLoader.load(tf);
-            } else {
-                throw new TemplateNotFoundException(path);
-            }
-        }
-        return template;
+        throw new TemplateNotFoundException(path);
     }
 
     /**
@@ -203,12 +208,17 @@ public class TemplateLoader {
     public static List<Template> getAllTemplate() {
         List<Template> res = new ArrayList<Template>();
         for (VirtualFile virtualFile : Play.templatesPath) {
-            scan(res, virtualFile);
+            if (virtualFile.exists()) {
+                scan(res, virtualFile);
+            }
         }
         for (VirtualFile root : Play.roots) {
             VirtualFile vf = root.child("conf/routes");
             if (vf != null && vf.exists()) {
-                Template template = load(vf);
+                if (PrecompiledLoader.loadTemplate(vf) != null) {
+                    continue;
+                }
+                BaseTemplate template = (BaseTemplate)load(vf);
                 if (template != null) {
                     template.compile();
                 }
@@ -220,7 +230,10 @@ public class TemplateLoader {
     private static void scan(List<Template> templates, VirtualFile current) {
         if (!current.isDirectory() && !current.getName().startsWith(".") && !current.getName().endsWith(".scala.html")) {
             long start = System.currentTimeMillis();
-            Template template = load(current);
+            if (PrecompiledLoader.loadTemplate(current) != null) {
+                return;
+            }
+            BaseTemplate template = (BaseTemplate)load(current);
             if (template != null) {
                 try {
                     template.compile();

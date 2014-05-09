@@ -25,7 +25,7 @@ public abstract class TemplateCompiler {
     }
 
     public BaseTemplate compile(VirtualFile file) {
-        return compile(new GroovyTemplate(file.relativePath(), file.contentAsString()));
+        return compile(new GroovyTemplate(file.relativePath(), file));
     }
 
     StringBuilder compiledSource = new StringBuilder();

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import play.Logger;
 import play.Play;
+import play.PrecompiledLoader;
 import play.classloading.hash.ClassStateHashCreator;
 import play.vfs.VirtualFile;
 import play.cache.Cache;
@@ -31,7 +32,7 @@ import play.exceptions.UnexpectedException;
 import play.libs.IO;
 
 /**
- * The application classLoader. 
+ * The application classLoader.
  * Load the classes from the application Java sources files.
  */
 public class ApplicationClassloader extends ClassLoader {
@@ -50,7 +51,7 @@ public class ApplicationClassloader extends ClassLoader {
      */
     public ProtectionDomain protectionDomain;
 
-    private final Object lock = new Object(); 
+    private final Object lock = new Object();
 
     public ApplicationClassloader() {
         super(ApplicationClassloader.class.getClassLoader());
@@ -94,6 +95,31 @@ public class ApplicationClassloader extends ClassLoader {
         return super.loadClass(name, resolve);
     }
 
+    public Class<?> loadPrecompiledClass(ApplicationClass applicationClass, File file) {
+        String name = applicationClass.name;
+        try {
+            byte[] code = IO.readContent(file);
+            Class<?> clazz = findLoadedClass(name);
+            if (clazz == null) {
+                if (name.endsWith("package-info")) {
+                    definePackage(getPackageName(name), null, null, null, null, null, null, null);
+                } else {
+                    loadPackage(name);
+                }
+                clazz = defineClass(name, code, 0, code.length, protectionDomain);
+            }
+            applicationClass.javaClass = clazz;
+            applicationClass.javaByteCode = code;
+            applicationClass.compiled = true;
+            if (!applicationClass.isClass()) {
+                applicationClass.javaPackage = applicationClass.javaClass.getPackage();
+            }
+            return clazz;
+        } catch (Exception e) {
+            throw new RuntimeException("Load precompiled class file [" + file.getAbsolutePath() + "] for " + name + " error");
+        }
+    }
+
     // ~~~~~~~~~~~~~~~~~~~~~~~
     public Class<?> loadApplicationClass(String name) {
 
@@ -104,7 +130,15 @@ public class ApplicationClassloader extends ClassLoader {
             }
         }
 
+        if(Play.classes.hasClass(name)){
+            ApplicationClass applicationClass = Play.classes.getApplicationClass(name);
+            if(applicationClass.isDefinable()){
+                return applicationClass.javaClass;
+            }
+        }
         if (Play.usePrecompiled) {
+            return PrecompiledLoader.loadClass(name, false);
+/*
             try {
                 File file = Play.getFile("precompiled/java/" + name.replace(".", "/") + ".class");
                 if (!file.exists()) {
@@ -131,6 +165,11 @@ public class ApplicationClassloader extends ClassLoader {
             } catch (Exception e) {
                 throw new RuntimeException("Cannot find precompiled class file for " + name);
             }
+*/
+        }
+        Class clazz = PrecompiledLoader.loadClass(name, true);
+        if (clazz != null) {
+            return clazz;
         }
 
         long start = System.currentTimeMillis();
@@ -210,6 +249,10 @@ public class ApplicationClassloader extends ClassLoader {
      * Search for the byte code of the given class.
      */
     protected byte[] getClassDefinition(String name) {
+        byte[] bytes = PrecompiledLoader.getClassDefinition(name);
+        if (bytes != null) {
+            return bytes;
+        }
         name = name.replace(".", "/") + ".class";
         InputStream is = getResourceAsStream(name);
         if (is == null) {
@@ -309,7 +352,7 @@ public class ApplicationClassloader extends ClassLoader {
         // Now check for file modification
         List<ApplicationClass> modifieds = new ArrayList<ApplicationClass>();
         for (ApplicationClass applicationClass : Play.classes.all()) {
-            if (applicationClass.timestamp < applicationClass.javaFile.lastModified()) {
+            if (applicationClass.javaFile != null && applicationClass.timestamp < applicationClass.javaFile.lastModified()) {
                 applicationClass.refresh();
                 modifieds.add(applicationClass);
             }
@@ -394,8 +437,13 @@ public class ApplicationClassloader extends ClassLoader {
         if (allClasses == null) {
             allClasses = new ArrayList<Class>();
 
+            PrecompiledLoader.loadClasses();
             if (Play.usePrecompiled) {
 
+                for(ApplicationClass applicationClass:Play.classes.all()){
+                    allClasses.add(applicationClass.javaClass);
+                }
+/*
                 List<ApplicationClass> applicationClasses = new ArrayList<ApplicationClass>();
                 scanPrecompiled(applicationClasses, "", Play.getVirtualFile("precompiled/java"));
                 Play.classes.clear();
@@ -406,6 +454,7 @@ public class ApplicationClassloader extends ClassLoader {
                     applicationClass.compiled = true;
                     allClasses.add(clazz);
                 }
+*/
 
             } else {
 
@@ -424,7 +473,9 @@ public class ApplicationClassloader extends ClassLoader {
                         }
                     }
 
-                    Play.classes.compiler.compile(classNames.toArray(new String[classNames.size()]));
+                    if (classNames.size() > 0) {
+                        Play.classes.compiler.compile(classNames.toArray(new String[classNames.size()]));
+                    }
 
                 }
 
@@ -529,6 +580,14 @@ public class ApplicationClassloader extends ClassLoader {
         if (!current.isDirectory()) {
             if (current.getName().endsWith(".java") && !current.getName().startsWith(".")) {
                 String classname = packageName + current.getName().substring(0, current.getName().length() - 5);
+                if (Play.classes.hasClass(classname)) {
+                    ApplicationClass precompiledClass = Play.classes.getApplicationClass(classname);
+                    if (precompiledClass.timestamp < current.lastModified()) {
+                        Play.classes.remove(precompiledClass);
+                    }else {
+                        return;
+                    }
+                }
                 classes.add(Play.classes.getApplicationClass(classname));
             }
         } else {

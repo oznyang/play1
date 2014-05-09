@@ -15,6 +15,7 @@ import play.exceptions.TemplateExecutionException;
 import play.exceptions.TemplateExecutionException.DoBodyException;
 import play.libs.Codec;
 import play.libs.IO;
+import play.vfs.VirtualFile;
 
 /**
  * A template
@@ -27,6 +28,14 @@ public abstract class BaseTemplate extends Template {
     public Class compiledTemplate;
     public String compiledTemplateName;
     public Long timestamp = System.currentTimeMillis();
+    public VirtualFile sourceFile;
+
+    public BaseTemplate(String name, VirtualFile sourceFile) {
+        this.name = name;
+        this.sourceFile = sourceFile;
+        source = sourceFile.contentAsString();
+        timestamp = sourceFile.lastModified();
+    }
 
     public BaseTemplate(String name, String source) {
         this.name = name;
@@ -36,6 +45,20 @@ public abstract class BaseTemplate extends Template {
     public BaseTemplate(String source) {
         this.name = Codec.UUID();
         this.source = source;
+    }
+
+    public boolean isModified(){
+        return sourceFile != null && sourceFile.lastModified() > timestamp;
+    }
+
+    public void loadPrecompiled(File file) {
+        try {
+            byte[] code = IO.readContent(file);
+            directLoad(code);
+            timestamp = file.lastModified();
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot load precompiled template " + name);
+        }
     }
 
     public void loadPrecompiled() {

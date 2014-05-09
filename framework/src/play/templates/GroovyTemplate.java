@@ -54,6 +54,7 @@ import play.templates.types.SafeCSVFormatter;
 import play.templates.types.SafeHTMLFormatter;
 import play.templates.types.SafeXMLFormatter;
 import play.utils.HTML;
+import play.vfs.VirtualFile;
 
 /**
  * A template
@@ -73,7 +74,11 @@ public class GroovyTemplate extends BaseTemplate {
     }
 
     static {
-        new GroovyShell().evaluate("java.lang.String.metaClass.if = { condition -> if(condition) delegate; else '' }");
+        //new GroovyShell().evaluate("java.lang.String.metaClass.if = { condition -> if(condition) delegate; else '' }");
+    }
+
+    public GroovyTemplate(String name, VirtualFile sourceFile) {
+        super(name, sourceFile);
     }
 
     public GroovyTemplate(String name, String source) {
@@ -156,7 +161,7 @@ public class GroovyTemplate extends BaseTemplate {
                 // Cache
                 BytecodeCache.cacheBytecode(sb.toString().getBytes("utf-8"), name, source);
                 compiledTemplate = tClassLoader.loadClass(groovyClassesForThisTemplate.get(0).getName());
-                if (System.getProperty("precompile") != null) {
+                //if (System.getProperty("precompile") != null) {
                     try {
                         // emit bytecode to standard class layout as well
                         File f = Play.getFile("precompiled/templates/" + name.replaceAll("\\{(.*)\\}", "from_$1").replace(":", "_").replace("..", "parent"));
@@ -167,7 +172,7 @@ public class GroovyTemplate extends BaseTemplate {
                     } catch (Exception e) {
                         Logger.warn(e, "Unexpected");
                     }
-                }
+                //}
 
                 if (Logger.isTraceEnabled()) {
                     Logger.trace("%sms to compile template %s to %d classes", System.currentTimeMillis() - start, name, groovyClassesForThisTemplate.size());

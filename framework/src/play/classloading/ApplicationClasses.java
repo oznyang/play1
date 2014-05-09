@@ -235,7 +235,7 @@ public class ApplicationClasses {
                     Play.pluginCollection.enhance(this);
                 }
             }
-            if (System.getProperty("precompile") != null) {
+            //if (System.getProperty("precompile") != null) {
                 try {
                     // emit bytecode to standard class layout as well
                     File f = Play.getFile("precompiled/java/" + (name.replace(".", "/")) + ".class");
@@ -246,7 +246,7 @@ public class ApplicationClasses {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-            }
+            //}
             return this.enhancedByteCode;
 
         }
