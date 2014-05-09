@@ -219,7 +219,12 @@ public class Play {
             tmpDir = null;
             Logger.debug("No tmp folder will be used (play.tmp is set to none)");
         } else {
-            tmpDir = new File(configuration.getProperty("play.tmp", "tmp"));
+            String tmpString = System.getProperty("play.tmp");
+            if (tmpString != null) {
+                tmpDir = new File(tmpString);
+            } else {
+                tmpDir = new File(configuration.getProperty("play.tmp", "tmp"));
+            }
             if (!tmpDir.isAbsolute()) {
                 tmpDir = new File(applicationPath, tmpDir.getPath());
             }
@@ -243,7 +248,8 @@ public class Play {
 
         // Mode
         try {
-            mode = Mode.valueOf(configuration.getProperty("application.mode", "DEV").toUpperCase());
+            String modeString = System.getProperty("play.mode");
+            mode = Mode.valueOf(modeString != null ? modeString.toUpperCase() : configuration.getProperty("application.mode", "DEV").toUpperCase());
         } catch (IllegalArgumentException e) {
             Logger.error("Illegal mode '%s', use either prod or dev", configuration.getProperty("application.mode"));
             fatalServerErrorOccurred();
@@ -281,7 +287,7 @@ public class Play {
         modulesRoutes = new HashMap<String, VirtualFile>(16);
 
         // Load modules
-        loadModules();
+        ModuleLoader.loadModules();
 
         // Load the templates from the framework after the one from the modules
         templatesPath.add(VirtualFile.open(new File(frameworkPath, "framework/templates")));
@@ -330,7 +336,10 @@ public class Play {
             // This is used only by the embedded server (Mina, Netty, Jetty etc)
             URI uri = new URI(versionUrl.toString().replace(" ", "%20"));
             if (frameworkPath == null || !frameworkPath.exists()) {
-                if (uri.getScheme().equals("jar")) {
+                String path = System.getProperty("play.path");
+                if (path != null) {
+                    frameworkPath = new File(path);
+                } else if (uri.getScheme().equals("jar")) {
                     String jarPath = uri.getSchemeSpecificPart().substring(5, uri.getSchemeSpecificPart().lastIndexOf("!"));
                     frameworkPath = new File(jarPath).getParentFile().getParentFile().getAbsoluteFile();
                 } else if (uri.getScheme().equals("file")) {
@@ -378,6 +387,9 @@ public class Play {
             propsFromFile = IO.readUtf8Properties(conf.inputstream());
         } catch (RuntimeException e) {
             if (e.getCause() instanceof IOException) {
+                if (System.getProperty("precompile") != null) {
+                    return new Properties();
+                }
                 Logger.fatal("Cannot read "+filename);
                 fatalServerErrorOccurred();
             }
@@ -404,11 +416,10 @@ public class Play {
         }
         propsFromFile = newConfiguration;
         // Resolve ${..}
-        pattern = Pattern.compile("\\$\\{([^}]+)}");
         for (Object key : propsFromFile.keySet()) {
             String value = propsFromFile.getProperty(key.toString());
-            Matcher matcher = pattern.matcher(value);
-            StringBuffer newValue = new StringBuffer(100);
+            Matcher matcher = ModuleLoader.PLACEHOLDER_PATTERN.matcher(value);
+            StringBuffer newValue = new StringBuffer(64);
             while (matcher.find()) {
                 String jp = matcher.group(1);
                 String r;
@@ -416,10 +427,15 @@ public class Play {
                     r = Play.applicationPath.getAbsolutePath();
                 } else if (jp.equals("play.path")) {
                     r = Play.frameworkPath.getAbsolutePath();
+                } else if (jp.equals("play.tmp")) {
+                    r = Play.tmpDir.getAbsolutePath();
                 } else {
-                    r = System.getProperty(jp);
+                    r = propsFromFile.getProperty(jp);
                     if (r == null) {
-                        r = System.getenv(jp);
+                        r = System.getProperty(jp);
+                        if (r == null) {
+                            r = System.getenv(jp);
+                        }
                     }
                     if (r == null) {
                         Logger.warn("Cannot replace %s in configuration (%s=%s)", jp, key, value);
@@ -603,17 +619,17 @@ public class Play {
             long start = System.currentTimeMillis();
             classloader.getAllClasses();
 
-            if (Logger.isTraceEnabled()) {
-                Logger.trace("%sms to precompile the Java stuff", System.currentTimeMillis() - start);
-            }
+            //if (Logger.isTraceEnabled()) {
+            Logger.info("  %sms to precompile the Java class", System.currentTimeMillis() - start);
+            //}
 
             if (!lazyLoadTemplates) {
                 start = System.currentTimeMillis();
                 TemplateLoader.getAllTemplate();
 
-                if (Logger.isTraceEnabled()) {
-                    Logger.trace("%sms to precompile the templates", System.currentTimeMillis() - start);
-                }
+                //if (Logger.isTraceEnabled()) {
+                Logger.info("  %sms to precompile the templates", System.currentTimeMillis() - start);
+                //}
             }
             return true;
         } catch (Throwable e) {
