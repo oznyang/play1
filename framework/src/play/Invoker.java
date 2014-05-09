@@ -195,7 +195,11 @@ public class Invoker {
          */
         public boolean init() {
             Thread.currentThread().setContextClassLoader(Play.classloader);
+            long start = System.currentTimeMillis();
             Play.detectChanges();
+            if (Logger.isTraceEnabled()) {
+                Logger.trace("%sms to detectChanges", System.currentTimeMillis() - start);
+            }
             if (!Play.started) {
                 if (Play.mode == Mode.PROD) {
                     throw new UnexpectedException("Application is not started");
