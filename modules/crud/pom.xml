@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.wisorg.playframework</groupId>
+        <artifactId>play-parent</artifactId>
+        <version>1.3.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>crud</artifactId>
+    <packaging>playmodule</packaging>
+    <name>${project.artifactId}</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.wisorg.playframework</groupId>
+            <artifactId>play</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <sourceDirectory>app</sourceDirectory>
+        <plugins>
+            <plugin>
+                <groupId>com.wisorg.playframework</groupId>
+                <artifactId>play-maven-plugin</artifactId>
+                <extensions>true</extensions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
