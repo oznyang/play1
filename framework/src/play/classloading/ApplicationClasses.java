@@ -302,7 +302,9 @@ public class ApplicationClasses {
             javaByteCode = code;
             enhancedByteCode = code;
             compiled = true;
-            this.timestamp = this.javaFile.lastModified();
+            if (this.javaFile != null) {
+                this.timestamp = this.javaFile.lastModified();
+            }
         }
 
         @Override

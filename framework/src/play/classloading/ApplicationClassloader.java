@@ -109,7 +109,7 @@ public class ApplicationClassloader extends ClassLoader {
                 clazz = defineClass(name, code, 0, code.length, protectionDomain);
             }
             applicationClass.javaClass = clazz;
-            applicationClass.javaByteCode = code;
+            applicationClass.enhancedByteCode = applicationClass.javaByteCode = code;
             applicationClass.compiled = true;
             if (!applicationClass.isClass()) {
                 applicationClass.javaPackage = applicationClass.javaClass.getPackage();
