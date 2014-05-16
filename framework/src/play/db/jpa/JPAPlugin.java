@@ -1,6 +1,7 @@
 package play.db.jpa;
 
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Level;
 import org.hibernate.ejb.Ejb3Configuration;
 
@@ -8,10 +9,7 @@ import play.Logger;
 import play.Play;
 import play.PlayPlugin;
 import play.classloading.ApplicationClasses.ApplicationClass;
-import play.data.binding.Binder;
-import play.data.binding.NoBinding;
-import play.data.binding.ParamNode;
-import play.data.binding.RootParamNode;
+import play.data.binding.*;
 import play.db.DB;
 import play.db.Model;
 import play.db.Configuration;
@@ -101,33 +99,32 @@ public class JPAPlugin extends PlayPlugin {
         new JPAEnhancer().enhanceThisClass(applicationClass);
     }
 
-
-    public void onConfigurationRead() {
-        Properties configuration = Play.configuration;
-    }
-     
-    public EntityManager em(String key) {
-        EntityManagerFactory emf = JPA.emfs.get(key);
-        if(emf == null) {
-            return null;
-        }
-        return emf.createEntityManager();
-    }
-
     /**
      * Reads the configuration file and initialises required JPA EntityManagerFactories.
      */
     @Override
     public void onApplicationStart() {
-        
-        
-        org.hibernate.ejb.HibernatePersistence persistence = new org.hibernate.ejb.HibernatePersistence();
         // Update the configuration
         Play.configuration = Configuration.convertToMultiDB(Play.configuration);
                          
         for (String dbName : Configuration.getDbNames(Play.configuration)) {
             Ejb3Configuration cfg = new Ejb3Configuration();
-            List<Class> classes = Play.classloader.getAnnotatedClasses(Entity.class);
+
+            List<Class> classes = new ArrayList<Class>(32);
+            String[] moreEntities = StringUtils.split(Play.configuration.getProperty("jpa.entities", ""), ",");
+            for (String entity : moreEntities) {
+                entity = StringUtils.trim(entity);
+                if ("".equals(entity)) {
+                    continue;
+                }
+                try {
+                    classes.add(Play.classloader.loadClass(entity));
+                } catch (Exception e) {
+                    Logger.warn("JPA -> Entity not found: %s", entity);
+                }
+            }
+
+            classes.addAll(Play.classloader.getAnnotatedClasses(Entity.class));
             for (Class<?> clazz : classes) {
                 if (clazz.isAnnotationPresent(Entity.class)) {
                     // Do we have a transactional annotation matching our dbname?
@@ -142,9 +139,9 @@ public class JPAPlugin extends PlayPlugin {
                 }
             }
 
-
-            if (!Play.configuration.getProperty("jpa.ddl", Play.mode.isDev() ? "update" : "none").equals("none")) {
-                cfg.setProperty("hibernate.hbm2ddl.auto", Play.configuration.getProperty("jpa.ddl", "update"));
+            String ddlString = Play.configuration.getProperty("jpa.ddl", Play.mode.isDev() ? "update" : "none");
+            if (!"none".equals(ddlString)) {
+                cfg.setProperty("hibernate.hbm2ddl.auto", ddlString);
             }
           
             Map<String, String> properties = Configuration.getProperties(dbName);
@@ -268,18 +265,6 @@ public class JPAPlugin extends PlayPlugin {
       return txFilter;
     }
 
-    public static EntityManager createEntityManager() {
-      return JPA.createEntityManager(JPA.DEFAULT);
-    }
-
-
-    /**
-     * initialize the JPA context and starts a JPA transaction
-     *
-     * @param readonly true for a readonly transaction
-     * @param autoCommit true to automatically commit the DB transaction after each JPA statement
-     * @Deprecated see JPA startTx() method
-     */
     public static void startTx(boolean readonly) {
         if (!JPA.isEnabled()) {
              return;
@@ -293,17 +278,17 @@ public class JPAPlugin extends PlayPlugin {
         JPA.createContext(manager, readonly);
     }
 
-   
+
     /**
-     * clear current JPA context and transaction 
+     * clear current JPA context and transaction
      * @param rollback shall current transaction be committed (false) or cancelled (true)
      * @Deprecated see JPA rollback() and closeTx() method
      */
     public static void closeTx(boolean rollback) {
-        if (!JPA.isEnabled() || JPA.currentEntityManager.get() == null || JPA.currentEntityManager.get().get(JPA.DEFAULT) == null || JPA.currentEntityManager.get().get(JPA.DEFAULT).entityManager == null) {
+        if (!JPA.isEnabled() || JPA.isInitialized(JPA.DEFAULT)) {
             return;
         }
-        EntityManager manager = JPA.currentEntityManager.get().get(JPA.DEFAULT).entityManager;
+        EntityManager manager = JPA.em();
         try {
             if (autoTxs) {
                 // Be sure to set the connection is non-autoCommit mode as some driver will complain about COMMIT statement
