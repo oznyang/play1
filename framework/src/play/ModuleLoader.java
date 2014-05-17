@@ -1,6 +1,5 @@
 package play;
 
-
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import play.libs.Files;
@@ -11,8 +10,6 @@ import java.io.FileInputStream;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * .
@@ -22,7 +19,6 @@ import java.util.regex.Pattern;
  * @version V1.0, 14-5-7
  */
 final class ModuleLoader {
-    public static Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{([^}]+)}");
     public static String MODULE_CONF_FIle = "m.conf";
     private static Set<String> LOADED_MODULES = new HashSet<String>();
 
@@ -69,7 +65,7 @@ final class ModuleLoader {
                     addModule(props, moduleName, module);
                 } else if (!name.contains(".")) {
                     String path = IO.readContentAsString(module).trim();
-                    addModule(props, moduleName, new File(resolvePlaceholder(path)));
+                    addModule(props, moduleName, new File(ConfReader.resolvePlaceholder(path)));
                 }
             }
         }
@@ -86,45 +82,21 @@ final class ModuleLoader {
             addModule(props, "_docviewer", new File(Play.frameworkPath, "modules/docviewer"));
         }
 
-        for (String name : props.stringPropertyNames()) {
+        for (Object obj : props.keySet()) {
+            String name = obj.toString();
             if (LOADED_MODULES.contains(name)) {
                 return;
             }
-            String path = resolvePlaceholder(props.getProperty(name));
-            if (BooleanUtils.toBooleanObject(path) != Boolean.FALSE) {
-                addModule(name, new File(path));
+            String path = ConfReader.resolvePlaceholder(props.getProperty(name));
+            if (!path.startsWith("!") && BooleanUtils.toBooleanObject(path) != Boolean.FALSE) {
+                File module = new File(path);
+                if (!module.isAbsolute()) {
+                    module = new File(Play.applicationPath, path);
+                }
+                addModule(name, module);
             }
         }
-    }
-
-    private static String resolvePlaceholder(String value) {
-        Matcher matcher = PLACEHOLDER_PATTERN.matcher(value);
-        StringBuffer sb = new StringBuffer(64);
-        while (matcher.find()) {
-            String jp = matcher.group(1);
-            String r;
-            if (jp.equals("application.path")) {
-                r = Play.applicationPath.getAbsolutePath();
-            } else if (jp.equals("play.path")) {
-                r = Play.frameworkPath.getAbsolutePath();
-            } else if (jp.equals("play.tmp")) {
-                r = Play.tmpDir.getAbsolutePath();
-            } else {
-                r = Play.configuration.getProperty(jp);
-                if (r == null) {
-                    r = System.getProperty(jp);
-                    if (r == null) {
-                        r = System.getenv(jp);
-                    }
-                }
-                if (r == null) {
-                    continue;
-                }
-            }
-            matcher.appendReplacement(sb, r);
-        }
-        matcher.appendTail(sb);
-        return sb.toString();
+        Logger.info(Play.modules.size() + " module loaded");
     }
 
     private static void addModule(Properties props, String name, File path) {
@@ -138,7 +110,7 @@ final class ModuleLoader {
 
     private static void addModule(String name, File path) {
         if (!path.exists()) {
-            Logger.error("Module %s will not be loaded because %s does not exist", name, path.getAbsolutePath());
+            Logger.error("!Module %s is unavailable (%s) not exist", name, path.getAbsoluteFile());
             return;
         }
         Play.addModule(name, path);

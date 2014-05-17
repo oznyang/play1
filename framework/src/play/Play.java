@@ -358,7 +358,18 @@ public class Play {
      */
     public static void readConfiguration() {
         confs = new HashSet<VirtualFile>();
-        configuration = readOneConfigurationFile("application.conf");
+        try {
+            configuration = ConfReader.read(VirtualFile.open(new File(applicationPath, "conf/application.conf")), confs);
+        } catch (Exception e) {
+            if (e.getCause() instanceof IOException) {
+                if (System.getProperty("precompile") != null) {
+                    configuration = new Properties();
+                } else {
+                    Logger.fatal("Cannot read application.conf");
+                    fatalServerErrorOccurred();
+                }
+            }
+        }
         extractHttpPort();
         // Plugins
         pluginCollection.onConfigurationRead();
@@ -377,25 +388,22 @@ public class Play {
         Properties propsFromFile=null;
 
         VirtualFile appRoot = VirtualFile.open(applicationPath);
-        
+
         VirtualFile conf = appRoot.child("conf/" + filename);
         if (confs.contains(conf)) {
             throw new RuntimeException("Detected recursive @include usage. Have seen the file " + filename + " before");
         }
-        
+
         try {
             propsFromFile = IO.readUtf8Properties(conf.inputstream());
         } catch (RuntimeException e) {
             if (e.getCause() instanceof IOException) {
-                if (System.getProperty("precompile") != null) {
-                    return new Properties();
-                }
                 Logger.fatal("Cannot read "+filename);
                 fatalServerErrorOccurred();
             }
         }
         confs.add(conf);
-        
+
         // OK, check for instance specifics configuration
         Properties newConfiguration = new OrderSafeProperties();
         Pattern pattern = Pattern.compile("^%([a-zA-Z0-9_\\-]+)\\.(.*)$");
@@ -416,10 +424,11 @@ public class Play {
         }
         propsFromFile = newConfiguration;
         // Resolve ${..}
+        pattern = Pattern.compile("\\$\\{([^}]+)}");
         for (Object key : propsFromFile.keySet()) {
             String value = propsFromFile.getProperty(key.toString());
-            Matcher matcher = ModuleLoader.PLACEHOLDER_PATTERN.matcher(value);
-            StringBuffer newValue = new StringBuffer(64);
+            Matcher matcher = pattern.matcher(value);
+            StringBuffer newValue = new StringBuffer(100);
             while (matcher.find()) {
                 String jp = matcher.group(1);
                 String r;
@@ -427,15 +436,10 @@ public class Play {
                     r = Play.applicationPath.getAbsolutePath();
                 } else if (jp.equals("play.path")) {
                     r = Play.frameworkPath.getAbsolutePath();
-                } else if (jp.equals("play.tmp")) {
-                    r = Play.tmpDir.getAbsolutePath();
                 } else {
-                    r = propsFromFile.getProperty(jp);
+                    r = System.getProperty(jp);
                     if (r == null) {
-                        r = System.getProperty(jp);
-                        if (r == null) {
-                            r = System.getenv(jp);
-                        }
+                        r = System.getenv(jp);
                     }
                     if (r == null) {
                         Logger.warn("Cannot replace %s in configuration (%s=%s)", jp, key, value);

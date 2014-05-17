@@ -30,14 +30,15 @@ public class IO {
      * @return The Properties object
      */
     public static Properties readUtf8Properties(InputStream is) {
-        Properties properties = new OrderSafeProperties();
         try {
+            Properties properties = new OrderSafeProperties();
             properties.load(is);
-            is.close();
+            return properties;
         } catch (Exception e) {
             throw new RuntimeException(e);
+        } finally {
+            IOUtils.closeQuietly(is);
         }
-        return properties;
     }
 
     /**
