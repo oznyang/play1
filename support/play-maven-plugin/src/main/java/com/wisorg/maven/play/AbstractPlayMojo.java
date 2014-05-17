@@ -31,7 +31,7 @@ public abstract class AbstractPlayMojo extends AbstractMojo {
     protected MavenProject project;
 
     @Component
-    private ArchiverManager archiverManager;
+    protected ArchiverManager archiverManager;
 
     @Component
     private BuildContext buildContext;
@@ -78,7 +78,7 @@ public abstract class AbstractPlayMojo extends AbstractMojo {
             Writer writer = null;
             try {
                 writer = new OutputStreamWriter(new FileOutputStream(moduleStatusFile), "UTF-8");
-                props.store(writer, "Modules Configuration, set value as false to disable module.");
+                props.store(writer, "Modules Configuration, set value as false or prefix path with ! to disable module.");
                 buildContext.refresh(moduleStatusFile);
             } finally {
                 IOUtils.closeQuietly(writer);

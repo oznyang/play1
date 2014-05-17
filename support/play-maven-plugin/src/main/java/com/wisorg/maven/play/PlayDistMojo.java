@@ -92,9 +92,6 @@ public class PlayDistMojo extends PlayPrecompileMojo {
     private String distSourceClassifier;
 
     @Component
-    private ArchiverManager archiverManager;
-
-    @Component
     private MavenProjectHelper projectHelper;
 
     @Override
