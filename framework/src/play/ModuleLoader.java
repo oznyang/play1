@@ -96,7 +96,9 @@ final class ModuleLoader {
                 addModule(name, module);
             }
         }
-        Logger.info(Play.modules.size() + " module loaded");
+        if (Play.modules.size() > 0) {
+            Logger.info(Play.modules.size() + " module loaded");
+        }
     }
 
     private static void addModule(Properties props, String name, File path) {

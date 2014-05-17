@@ -151,7 +151,7 @@ public class DB {
      */
     public static Connection getConnection(String name) {
         try {
-            if (JPA.isEnabled()) {
+            if (JPA.isInitialized()) {
                return ((SessionImpl)((org.hibernate.ejb.EntityManagerImpl) JPA.em(name)).getSession()).connection();
             }
             

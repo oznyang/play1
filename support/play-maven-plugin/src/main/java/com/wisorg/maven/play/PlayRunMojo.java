@@ -154,13 +154,14 @@ public class PlayRunMojo extends AbstractPlayServerMojo {
                 addJvmArgs(javaTask, "--https.port=" + httpsPort);
             }
             if ("dev".equalsIgnoreCase(appMode)) {
-                String jpdaPortStr = props.getProperty("jpda.port", "8000");
-                int jpdaPort = Integer.parseInt(jpdaPortStr);
+                if (StringUtils.isEmpty(debugPort)) {
+                    debugPort = props.getProperty("jpda.port", "8000");
+                }
+                int jpdaPort = Integer.parseInt(debugPort);
                 if (!disableCheckJpda) {
                     jpdaPort = checkJpda(jpdaPort);
                 }
-                addJvmArgs(javaTask, "-Xdebug");
-                addJvmArgs(javaTask, "-Xrunjdwp:transport=dt_socket,address=" + jpdaPort + ",server=y,suspend=n");
+                addJvmArgs(javaTask, "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=" + jpdaPort);
             }
 
             Artifact frameworkJarArtifact = getFrameworkJarArtifact();

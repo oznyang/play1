@@ -4,10 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -59,7 +56,7 @@ public class ApplicationClasses {
     public List<ApplicationClass> getAssignableClasses(Class<?> clazz) {
         List<ApplicationClass> results = new ArrayList<ApplicationClass>();
         if (clazz != null) {
-            for (ApplicationClass applicationClass : new ArrayList<ApplicationClass>(classes.values())) {
+            for (ApplicationClass applicationClass : classes.values()) {
                 if (!applicationClass.isClass()) {
                     continue;
                 }
@@ -106,8 +103,8 @@ public class ApplicationClasses {
      * All loaded classes.
      * @return All loaded classes
      */
-    public List<ApplicationClass> all() {
-        return new ArrayList<ApplicationClass>(classes.values());
+    public Collection<ApplicationClass> all() {
+        return Collections.unmodifiableCollection(classes.values());
     }
 
     /**

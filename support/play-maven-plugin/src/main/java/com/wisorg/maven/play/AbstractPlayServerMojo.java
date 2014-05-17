@@ -28,10 +28,16 @@ import java.util.Set;
 public abstract class AbstractPlayServerMojo extends AbstractPlayMojo {
 
     /**
-     * Additional JVM arguments passed to Play server's JVM
+     * Additional JVM arguments passed to Play server's JVM.
      */
     @Parameter(property = "play.jvmArgs", defaultValue = "-Xms128m -Xmx1024m -XX:MaxPermSize=256m")
     private String jvmArgs;
+
+    /**
+     * When in fork mode, enable jvm debug.
+     */
+    @Parameter(property = "play.debugPort", defaultValue = "")
+    protected String debugPort;
 
     /**
      * Play id (profile) used when starting server without tests.
@@ -181,6 +187,9 @@ public abstract class AbstractPlayServerMojo extends AbstractPlayMojo {
         addJvmArgs(javaTask, props.getProperty("jvm.memory"), getJvmArgs());
         // JDK 7 compat
         javaTask.createJvmarg().setValue("-XX:-UseSplitVerifier");
+        if (StringUtils.isNotEmpty(debugPort)) {
+            javaTask.createJvmarg().setValue("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=" + debugPort);
+        }
         addSystemProperty(javaTask, "play.path", getPlayHome().getAbsolutePath());
         addSystemProperty(javaTask, "play.id", playId);
         addSystemProperty(javaTask, "play.tmp", getPlayHomeDir("tmp").getAbsolutePath());

@@ -50,12 +50,12 @@ public class JPA {
     }
 
     public static boolean isInitialized() {
-        return (ems.get() != null);
+        return ems.get() != null;
     }
 
     public static boolean isInitialized(String key) {
-        Map<String, JPAContext> jpaContexts = get();
-        return (jpaContexts != null && jpaContexts.containsKey(key));
+        Map<String, JPAContext> jpaContexts = ems.get();
+        return jpaContexts != null && jpaContexts.containsKey(key);
     }
 
     public static boolean isEnabled() {

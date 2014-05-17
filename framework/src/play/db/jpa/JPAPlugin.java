@@ -35,7 +35,7 @@ public class JPAPlugin extends PlayPlugin {
 
     public static boolean autoTxs = true;
 
-  
+
     @Override
     public Object bind(RootParamNode rootParamNode, String name, Class clazz, java.lang.reflect.Type type, Annotation[] annotations) {
         // TODO need to be more generic in order to work with JPASupport
@@ -106,7 +106,7 @@ public class JPAPlugin extends PlayPlugin {
     public void onApplicationStart() {
         // Update the configuration
         Play.configuration = Configuration.convertToMultiDB(Play.configuration);
-                         
+
         for (String dbName : Configuration.getDbNames(Play.configuration)) {
             Ejb3Configuration cfg = new Ejb3Configuration();
 
@@ -131,11 +131,15 @@ public class JPAPlugin extends PlayPlugin {
                     PersistenceUnit pu = clazz.getAnnotation(PersistenceUnit.class);
                     if (pu != null && pu.name().equals(dbName)) {
                       cfg.addAnnotatedClass(clazz);
-                      Logger.info("Add JPA Model : %s to db %s", clazz, dbName);
+                        if (Logger.isDebugEnabled()) {
+                            Logger.debug("Add JPA Model : %s to db %s", clazz, dbName);
+                        }
                     } else if (pu == null && JPA.DEFAULT.equals(dbName)) {
-                      cfg.addAnnotatedClass(clazz);
-                      Logger.info("Add JPA Model : %s to db %s", clazz, dbName);
-                    }                    
+                        cfg.addAnnotatedClass(clazz);
+                        if (Logger.isDebugEnabled()) {
+                            Logger.debug("Add JPA Model : %s to db %s", clazz, dbName);
+                        }
+                    }
                 }
             }
 
@@ -143,12 +147,12 @@ public class JPAPlugin extends PlayPlugin {
             if (!"none".equals(ddlString)) {
                 cfg.setProperty("hibernate.hbm2ddl.auto", ddlString);
             }
-          
+
             Map<String, String> properties = Configuration.getProperties(dbName);
             properties.put("javax.persistence.transaction", "RESOURCE_LOCAL");
             properties.put("javax.persistence.provider", "org.hibernate.ejb.HibernatePersistence");
             properties.put("hibernate.dialect", getDefaultDialect(Play.configuration, dbName, Play.configuration.getProperty("db."+ dbName + ".driver")));
-            
+
              if (Play.configuration.getProperty("jpa." + dbName + ".debugSQL", "false").equals("true")) {
                 org.apache.log4j.Logger.getLogger("org.hibernate.SQL").setLevel(Level.ALL);
             } else {
@@ -157,7 +161,7 @@ public class JPAPlugin extends PlayPlugin {
 
             cfg.configure(Configuration.addHibernateProperties(properties, dbName));
             cfg.setDataSource(DB.getDataSource(dbName));
-          
+
             try {
                 Field field = cfg.getClass().getDeclaredField("overridenClassLoader");
                 field.setAccessible(true);
@@ -165,7 +169,7 @@ public class JPAPlugin extends PlayPlugin {
             } catch (Exception e) {
                 Logger.error(e, "Error trying to override the hibernate classLoader (new hibernate version ???)");
             }
-            
+
             cfg.setInterceptor(new HibernateInterceptor());
             JPA.emfs.put(dbName, cfg.buildEntityManagerFactory());
         }
@@ -232,16 +236,16 @@ public class JPAPlugin extends PlayPlugin {
                 emf.close();
             }
         }
-        JPA.emfs.clear();    
+        JPA.emfs.clear();
     }
-  
+
     @Override
     public void afterFixtureLoad() {
         if (JPA.isEnabled()) {
             JPA.em().clear();
         }
-    } 
-   
+    }
+
     @Override
     public void afterInvocation() {
        // In case the current Action got suspended
@@ -285,7 +289,7 @@ public class JPAPlugin extends PlayPlugin {
      * @Deprecated see JPA rollback() and closeTx() method
      */
     public static void closeTx(boolean rollback) {
-        if (!JPA.isEnabled() || JPA.isInitialized(JPA.DEFAULT)) {
+        if (!JPA.isEnabled() || !JPA.isInitialized(JPA.DEFAULT)) {
             return;
         }
         EntityManager manager = JPA.em();
