@@ -20,6 +20,7 @@ import java.util.List;
  */
 public final class PrecompiledLoader {
     private static List<VirtualFile> precompiledPath = new ArrayList<VirtualFile>();
+    private static final String PRECOMPILE_JAVA_PATH = "precompiled" + File.separator + "java";
 
     public static void addPrecompiledPath(File path) {
         if (path.exists()) {
@@ -34,14 +35,15 @@ public final class PrecompiledLoader {
         for (VirtualFile path : precompiledPath) {
             VirtualFile file = path.child(StringUtils.replace(name, ".", "/") + ".class");
             if (file.exists()) {
+                VirtualFile javaFile = getJavaFile(file.getRealFile().getAbsolutePath());
                 if (checkJavaFile) {
-                    VirtualFile javaFile = ApplicationClasses.getJava(name);
                     if (javaFile != null && javaFile.lastModified() > file.lastModified()) {
                         return null;
                     }
                 }
                 ApplicationClasses.ApplicationClass applicationClass = new ApplicationClasses.ApplicationClass();
                 applicationClass.name = name;
+                applicationClass.javaFile = javaFile;
                 return Play.classloader.loadPrecompiledClass(applicationClass, file.getRealFile());
             }
         }
@@ -78,6 +80,12 @@ public final class PrecompiledLoader {
         return 0;
     }
 
+    private static VirtualFile getJavaFile(String path) {
+        path = StringUtils.replace(path, PRECOMPILE_JAVA_PATH, "app");
+        File file = new File(StringUtils.substringBeforeLast(path, ".") + ".java");
+        return file.exists() ? VirtualFile.open(file) : null;
+    }
+
     private static void scanPrecompiled(List<ApplicationClasses.ApplicationClass> classes, String packageName, VirtualFile current) {
         if (!current.isDirectory()) {
             if (current.getName().endsWith(".class") && !current.getName().startsWith(".")) {
@@ -85,6 +93,7 @@ public final class PrecompiledLoader {
                 ApplicationClasses.ApplicationClass applicationClass = new ApplicationClasses.ApplicationClass();
                 applicationClass.name = classname;
                 applicationClass.timestamp = current.lastModified();
+                applicationClass.javaFile = getJavaFile(current.getRealFile().getAbsolutePath());
                 Play.classloader.loadPrecompiledClass(applicationClass, current.getRealFile());
                 classes.add(applicationClass);
             }

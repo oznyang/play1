@@ -24,6 +24,7 @@ import java.util.Set;
 import play.Logger;
 import play.Play;
 import play.PrecompiledLoader;
+import play.classloading.enhancers.SigEnhancer;
 import play.classloading.hash.ClassStateHashCreator;
 import play.vfs.VirtualFile;
 import play.cache.Cache;
@@ -125,8 +126,14 @@ public class ApplicationClassloader extends ClassLoader {
 
         if (ApplicationClass.isClass(name)) {
             Class maybeAlreadyLoaded = findLoadedClass(name);
-            if(maybeAlreadyLoaded != null) {
-                return maybeAlreadyLoaded;
+            if (maybeAlreadyLoaded != null) {
+                if (Play.classes.hasClass(name)) {
+                    if (Play.classes.getApplicationClass(name).javaClass != null) {
+                        return maybeAlreadyLoaded;
+                    }
+                } else {
+                    return maybeAlreadyLoaded;
+                }
             }
         }
 
@@ -353,6 +360,12 @@ public class ApplicationClassloader extends ClassLoader {
         List<ApplicationClass> modifieds = new ArrayList<ApplicationClass>();
         for (ApplicationClass applicationClass : Play.classes.all()) {
             if (applicationClass.javaFile != null && applicationClass.timestamp < applicationClass.javaFile.lastModified()) {
+                if (applicationClass.sigChecksum == 0) {
+                    try {
+                        new SigEnhancer().enhanceThisClass(applicationClass);
+                    } catch (Exception ignored) {
+                    }
+                }
                 applicationClass.refresh();
                 modifieds.add(applicationClass);
             }
