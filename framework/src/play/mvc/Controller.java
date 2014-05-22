@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.concurrent.Future;
 
+import com.alibaba.fastjson.serializer.SerializeFilter;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import org.w3c.dom.Document;
 
 import play.Invoker.Suspend;
@@ -31,22 +33,8 @@ import play.exceptions.*;
 import play.libs.Time;
 import play.mvc.Http.Request;
 import play.mvc.Router.ActionDefinition;
-import play.mvc.results.BadRequest;
+import play.mvc.results.*;
 import play.mvc.results.Error;
-import play.mvc.results.Forbidden;
-import play.mvc.results.NotFound;
-import play.mvc.results.NotModified;
-import play.mvc.results.Ok;
-import play.mvc.results.Redirect;
-import play.mvc.results.RedirectToStatic;
-import play.mvc.results.RenderBinary;
-import play.mvc.results.RenderHtml;
-import play.mvc.results.RenderJson;
-import play.mvc.results.RenderTemplate;
-import play.mvc.results.RenderText;
-import play.mvc.results.RenderXml;
-import play.mvc.results.Result;
-import play.mvc.results.Unauthorized;
 import play.templates.Template;
 import play.templates.TemplateLoader;
 import play.utils.Default;
@@ -326,7 +314,7 @@ public class Controller implements ControllerSupport, LocalVariablesSupport {
      * @param jsonString The JSON string
      */
     protected static void renderJSON(String jsonString) {
-        throw new RenderJson(jsonString);
+        throw new RenderJsonEx(jsonString);
     }
 
     /**
@@ -334,7 +322,19 @@ public class Controller implements ControllerSupport, LocalVariablesSupport {
      * @param o The Java object to serialize
      */
     protected static void renderJSON(Object o) {
-        throw new RenderJson(o);
+        throw new RenderJsonEx(o);
+    }
+
+    protected static void renderJSON(Object o, SerializeFilter filter, SerializerFeature... features) {
+        throw new RenderJsonEx(o, null, filter, features);
+    }
+
+    protected static void renderJSON(Object o, String dateFormat, SerializerFeature... features) {
+        throw new RenderJsonEx(o, dateFormat, null, features);
+    }
+
+    protected static void renderJSON(Object o, SerializerFeature... features) {
+        throw new RenderJsonEx(o, null, null, features);
     }
 
     /**
