@@ -145,7 +145,8 @@ public class PluginCollection {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), "utf-8"));
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    if (line.trim().length() == 0) {
+                    line = line.trim();
+                    if (line.length() == 0 || line.startsWith("#")) {
                         continue;
                     }
                     String[] lineParts = line.split(":");
@@ -193,7 +194,7 @@ public class PluginCollection {
      * Reloads all loaded plugins that is application-supplied.
      */
     public void reloadApplicationPlugins() throws Exception{
-       
+
         Set<PlayPlugin> reloadedPlugins = new HashSet<PlayPlugin>();
         for (PlayPlugin plugin : getAllPlugins()) {
 
@@ -288,7 +289,7 @@ public class PluginCollection {
                 enabledPlugins_readOnlyCopy = createReadonlyCopy( enabledPlugins);
             }
 
-        
+
     }
 
     /**
@@ -310,7 +311,7 @@ public class PluginCollection {
                     return true;
                 }
             }
-        
+
         return false;
     }
 
@@ -380,14 +381,14 @@ public class PluginCollection {
     public List<PlayPlugin> getEnabledPlugins() {
         return enabledPlugins_readOnlyCopy;
     }
-    
+
     /**
      * Returns readonly view of all enabled plugins in reversed order
      * @return
      */
     public Collection<PlayPlugin> getReversedEnabledPlugins() {
         return new AbstractCollection<PlayPlugin>() {
-			
+
 		    @Override public Iterator<PlayPlugin> iterator() {
 		    	final ListIterator<PlayPlugin> enabledPluginsListIt = enabledPlugins.listIterator(size() - 1);
 		        return new Iterator<PlayPlugin>() {
@@ -410,9 +411,9 @@ public class PluginCollection {
 
 		      @Override public int size() {
 		        return enabledPlugins.size();
-		      }			
-			
-			
+		      }
+
+
 		};
     }
 
@@ -741,10 +742,10 @@ public class PluginCollection {
                 allPluginTests.addAll(unitTests);
             }
         }
-        
+
         return allPluginTests;
     }
-    
+
     public Collection<Class> getFunctionalTests() {
         Set<Class> allPluginTests = new HashSet<Class>();
         for (PlayPlugin plugin : getEnabledPlugins()) {
@@ -753,7 +754,7 @@ public class PluginCollection {
                 allPluginTests.addAll(funcTests);
             }
         }
-        
+
         return allPluginTests;
     }
 }
