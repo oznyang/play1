@@ -60,7 +60,6 @@ public class ApplicationClassloader extends ClassLoader {
         for (ApplicationClass applicationClass : Play.classes.all()) {
             applicationClass.uncompile();
         }
-        pathHash = computePathHash();
         try {
             CodeSource codeSource = new CodeSource(new URL("file:" + Play.applicationPath.getAbsolutePath()), (Certificate[]) null);
             Permissions permissions = new Permissions();
@@ -387,7 +386,9 @@ public class ApplicationClassloader extends ClassLoader {
 
         // Now check if there is new classes or removed classes
         int hash = computePathHash();
-        if (hash != this.pathHash) {
+        if (pathHash == 0) {
+            pathHash = hash;
+        } else if (hash != pathHash) {
             // Remove class for deleted files !!
             for (ApplicationClass applicationClass : Play.classes.all()) {
                 if (applicationClass.javaFile != null && !applicationClass.javaFile.exists()) {
@@ -399,6 +400,9 @@ public class ApplicationClassloader extends ClassLoader {
                     currentState = new ApplicationClassloaderState();//show others that we have changed..
                     // Ok we have to remove all classes from the same file ...
                     VirtualFile vf = applicationClass.javaFile;
+                    if (vf == null) {
+                        continue;
+                    }
                     for (ApplicationClass ac : Play.classes.all()) {
                         if (ac.javaFile.equals(vf)) {
                             Play.classes.classes.remove(ac.name);

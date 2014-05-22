@@ -89,8 +89,9 @@ public final class PrecompiledLoader {
         if (file.exists()) {
             return VirtualFile.open(file);
         } else {
+            String fileName = StringUtils.replace(classname, ".", "/") + ".java";
             for (VirtualFile jp : Play.javaPath) {
-                VirtualFile javaFile = jp.child(classname);
+                VirtualFile javaFile = jp.child(fileName);
                 if (javaFile.exists()) {
                     return javaFile;
                 }
