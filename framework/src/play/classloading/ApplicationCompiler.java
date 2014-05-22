@@ -27,6 +27,8 @@ import play.Play;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.exceptions.CompilationException;
 import play.exceptions.UnexpectedException;
+import play.libs.IO;
+import play.vfs.VirtualFile;
 
 /**
  * Java compiler (uses eclipse JDT)
@@ -181,6 +183,10 @@ public class ApplicationCompiler {
 
                     // ApplicationClass exists
                     if (applicationClass != null) {
+                        VirtualFile classFile = applicationClass.classFile;
+                        if (classFile != null) {
+                            applicationClass.javaByteCode = applicationClass.enhancedByteCode = classFile.content();
+                        }
 
                         if (applicationClass.javaByteCode != null) {
                             ClassFileReader classFileReader = new ClassFileReader(applicationClass.javaByteCode, fileName, true);

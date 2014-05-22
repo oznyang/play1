@@ -8,6 +8,7 @@ import java.util.*;
 
 import javassist.ClassPool;
 import javassist.CtClass;
+import org.apache.commons.lang.StringUtils;
 import play.Logger;
 import play.Play;
 import play.PlayPlugin;
@@ -146,6 +147,10 @@ public class ApplicationClasses {
          * A reference to the java source file
          */
         public VirtualFile javaFile;
+        /**
+         * A reference to the java class file
+         */
+        public VirtualFile classFile;
         /**
          * The Java source
          */
@@ -318,11 +323,7 @@ public class ApplicationClasses {
      * @return The virtualFile if found
      */
     public static VirtualFile getJava(String name) {
-        String fileName = name;
-        if (fileName.contains("$")) {
-            fileName = fileName.substring(0, fileName.indexOf("$"));
-        }
-        fileName = fileName.replace(".", "/") + ".java";
+        String fileName = StringUtils.replace(StringUtils.substringBefore(name, "$"), ".", "/") + ".java";
         for (VirtualFile path : Play.javaPath) {
             VirtualFile javaFile = path.child(fileName);
             if (javaFile.exists()) {

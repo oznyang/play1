@@ -23,6 +23,7 @@ final class ModuleLoader {
     private static Set<String> LOADED_MODULES = new HashSet<String>();
 
     public static void loadModules() {
+        PrecompiledLoader.addPrecompiledPath(Play.getFile("precompiled"));
         Properties props;
         try {
             props = IO.readUtf8Properties(new FileInputStream(Play.getFile(MODULE_CONF_FIle)));
@@ -95,7 +96,6 @@ final class ModuleLoader {
                 addModule(name, module);
             }
         }
-        PrecompiledLoader.addPrecompiledPath(Play.getFile("precompiled"));
         if (Play.modules.size() > 0) {
             Logger.info(Play.modules.size() + " module loaded");
         }

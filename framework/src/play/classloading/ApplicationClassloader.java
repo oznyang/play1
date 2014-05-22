@@ -96,8 +96,9 @@ public class ApplicationClassloader extends ClassLoader {
         return super.loadClass(name, resolve);
     }
 
-    public Class<?> loadPrecompiledClass(ApplicationClass applicationClass, File file) {
+    public Class<?> loadPrecompiledClass(ApplicationClass applicationClass) {
         String name = applicationClass.name;
+        File file = applicationClass.classFile.getRealFile();
         try {
             byte[] code = IO.readContent(file);
             Class<?> clazz = findLoadedClass(name);
@@ -127,56 +128,29 @@ public class ApplicationClassloader extends ClassLoader {
         if (ApplicationClass.isClass(name)) {
             Class maybeAlreadyLoaded = findLoadedClass(name);
             if (maybeAlreadyLoaded != null) {
-                if (Play.classes.hasClass(name)) {
-                    if (Play.classes.getApplicationClass(name).javaClass != null) {
-                        return maybeAlreadyLoaded;
-                    }
-                } else {
-                    return maybeAlreadyLoaded;
-                }
+                return maybeAlreadyLoaded;
             }
         }
 
-        if(Play.classes.hasClass(name)){
+        if (Play.classes.hasClass(name)) {
             ApplicationClass applicationClass = Play.classes.getApplicationClass(name);
-            if(applicationClass.isDefinable()){
+            if (applicationClass.isDefinable()) {
                 return applicationClass.javaClass;
-            }
-        }
-        if (Play.usePrecompiled) {
-            return PrecompiledLoader.loadClass(name, false);
-/*
-            try {
-                File file = Play.getFile("precompiled/java/" + name.replace(".", "/") + ".class");
-                if (!file.exists()) {
-                    return null;
-                }
-                byte[] code = IO.readContent(file);
-                Class<?> clazz = findLoadedClass(name);
-                if (clazz == null) {
-                    if (name.endsWith("package-info")) {
-                        definePackage(getPackageName(name), null, null, null, null, null, null, null);
-                    } else {
-                        loadPackage(name);
-                    }
-                    clazz = defineClass(name, code, 0, code.length, protectionDomain);
-                }
-                ApplicationClass applicationClass = Play.classes.getApplicationClass(name);
-                if (applicationClass != null) {
-                    applicationClass.javaClass = clazz;
-                    if (!applicationClass.isClass()) {
-                        applicationClass.javaPackage = applicationClass.javaClass.getPackage();
+            } else {
+                VirtualFile classFile = applicationClass.classFile;
+                if (classFile != null) {
+                    VirtualFile javaFile = applicationClass.javaFile;
+                    if (Play.usePrecompiled || javaFile == null || javaFile.lastModified() < classFile.lastModified()) {
+                        return loadPrecompiledClass(applicationClass);
                     }
                 }
-                return clazz;
-            } catch (Exception e) {
-                throw new RuntimeException("Cannot find precompiled class file for " + name);
             }
-*/
-        }
-        Class clazz = PrecompiledLoader.loadClass(name, true);
-        if (clazz != null) {
-            return clazz;
+        } else {
+            ApplicationClass applicationClass = PrecompiledLoader.loadApplicationClass(name);
+            if (applicationClass != null) {
+                Play.classes.add(applicationClass);
+                return loadPrecompiledClass(applicationClass);
+            }
         }
 
         long start = System.currentTimeMillis();
@@ -256,9 +230,11 @@ public class ApplicationClassloader extends ClassLoader {
      * Search for the byte code of the given class.
      */
     protected byte[] getClassDefinition(String name) {
-        byte[] bytes = PrecompiledLoader.getClassDefinition(name);
-        if (bytes != null) {
-            return bytes;
+        if (Play.classes.hasClass(name)) {
+            ApplicationClass applicationClass = Play.classes.getApplicationClass(name);
+            if (applicationClass.classFile != null) {
+                return IO.readContent(applicationClass.classFile.getRealFile());
+            }
         }
         name = name.replace(".", "/") + ".class";
         InputStream is = getResourceAsStream(name);
@@ -360,7 +336,7 @@ public class ApplicationClassloader extends ClassLoader {
         List<ApplicationClass> modifieds = new ArrayList<ApplicationClass>();
         for (ApplicationClass applicationClass : Play.classes.all()) {
             if (applicationClass.javaFile != null && applicationClass.timestamp < applicationClass.javaFile.lastModified()) {
-                if (applicationClass.sigChecksum == 0) {
+                if (applicationClass.enhancedByteCode != null && applicationClass.sigChecksum == 0) {
                     try {
                         new SigEnhancer().enhanceThisClass(applicationClass);
                     } catch (Exception ignored) {
@@ -414,7 +390,7 @@ public class ApplicationClassloader extends ClassLoader {
         if (hash != this.pathHash) {
             // Remove class for deleted files !!
             for (ApplicationClass applicationClass : Play.classes.all()) {
-                if (!applicationClass.javaFile.exists()) {
+                if (applicationClass.javaFile != null && !applicationClass.javaFile.exists()) {
                     Play.classes.classes.remove(applicationClass.name);
                     currentState = new ApplicationClassloaderState();//show others that we have changed..
                 }
@@ -498,13 +474,14 @@ public class ApplicationClassloader extends ClassLoader {
                         allClasses.add(clazz);
                     }
                 }
-
+/*
                 Collections.sort(allClasses, new Comparator<Class>() {
 
                     public int compare(Class o1, Class o2) {
                         return o1.getName().compareTo(o2.getName());
                     }
                 });
+*/
             }
         }
         return allClasses;

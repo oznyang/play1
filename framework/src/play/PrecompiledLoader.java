@@ -2,7 +2,6 @@ package play;
 
 import org.apache.commons.lang.StringUtils;
 import play.classloading.ApplicationClasses;
-import play.libs.IO;
 import play.templates.BaseTemplate;
 import play.templates.GroovyTemplate;
 import play.vfs.VirtualFile;
@@ -28,33 +27,25 @@ public final class PrecompiledLoader {
         }
     }
 
-    public static Class<?> loadClass(String name, boolean checkJavaFile) {
+    public static ApplicationClasses.ApplicationClass loadApplicationClass(String name) {
         if (name.startsWith("play.") || name.startsWith("java.")) {
             return null;
         }
         for (VirtualFile path : precompiledPath) {
             VirtualFile file = path.child(StringUtils.replace(name, ".", "/") + ".class");
             if (file.exists()) {
-                VirtualFile javaFile = getJavaFile(file.getRealFile().getAbsolutePath());
-                if (checkJavaFile) {
+                VirtualFile javaFile = null;
+                if (Play.mode.isDev()) {
+                    javaFile = getJavaFile(file.getRealFile().getAbsolutePath(), name);
                     if (javaFile != null && javaFile.lastModified() > file.lastModified()) {
                         return null;
                     }
                 }
                 ApplicationClasses.ApplicationClass applicationClass = new ApplicationClasses.ApplicationClass();
                 applicationClass.name = name;
+                applicationClass.classFile = file;
                 applicationClass.javaFile = javaFile;
-                return Play.classloader.loadPrecompiledClass(applicationClass, file.getRealFile());
-            }
-        }
-        return null;
-    }
-
-    public static byte[] getClassDefinition(String name) {
-        for (VirtualFile path : precompiledPath) {
-            VirtualFile file = path.child(name.replace(".", "/") + ".class");
-            if (file.exists()) {
-                return IO.readContent(file.getRealFile());
+                return applicationClass;
             }
         }
         return null;
@@ -66,8 +57,46 @@ public final class PrecompiledLoader {
             scanPrecompiled(applicationClasses, "", path);
         }
         for (ApplicationClasses.ApplicationClass applicationClass : applicationClasses) {
-            Play.classes.add(applicationClass);
+            if (!Play.classes.hasClass(applicationClass.name)) {
+                Play.classes.add(applicationClass);
+            }
         }
+    }
+
+    private static void scanPrecompiled(List<ApplicationClasses.ApplicationClass> classes, String packageName, VirtualFile current) {
+        if (!current.isDirectory()) {
+            if (current.getName().endsWith(".class") && !current.getName().startsWith(".")) {
+                String classname = packageName.substring(5) + current.getName().substring(0, current.getName().length() - 6);
+                ApplicationClasses.ApplicationClass applicationClass = new ApplicationClasses.ApplicationClass();
+                applicationClass.name = classname;
+                applicationClass.timestamp = current.lastModified();
+                applicationClass.classFile = current;
+                if (Play.mode.isDev()) {
+                    applicationClass.javaFile = getJavaFile(current.getRealFile().getAbsolutePath(), classname);
+                }
+                classes.add(applicationClass);
+            }
+        } else {
+            for (VirtualFile virtualFile : current.list()) {
+                scanPrecompiled(classes, packageName + current.getName() + ".", virtualFile);
+            }
+        }
+    }
+
+    private static VirtualFile getJavaFile(String path, String classname) {
+        path = StringUtils.replace(path, PRECOMPILE_JAVA_PATH, "app");
+        File file = new File(StringUtils.substringBeforeLast(path, ".") + ".java");
+        if (file.exists()) {
+            return VirtualFile.open(file);
+        } else {
+            for (VirtualFile jp : Play.javaPath) {
+                VirtualFile javaFile = jp.child(classname);
+                if (javaFile.exists()) {
+                    return javaFile;
+                }
+            }
+        }
+        return null;
     }
 
     public static long getTemplateLastModified(VirtualFile vf) {
@@ -78,30 +107,6 @@ public final class PrecompiledLoader {
             return file.lastModified();
         }
         return 0;
-    }
-
-    private static VirtualFile getJavaFile(String path) {
-        path = StringUtils.replace(path, PRECOMPILE_JAVA_PATH, "app");
-        File file = new File(StringUtils.substringBeforeLast(path, ".") + ".java");
-        return file.exists() ? VirtualFile.open(file) : null;
-    }
-
-    private static void scanPrecompiled(List<ApplicationClasses.ApplicationClass> classes, String packageName, VirtualFile current) {
-        if (!current.isDirectory()) {
-            if (current.getName().endsWith(".class") && !current.getName().startsWith(".")) {
-                String classname = packageName.substring(5) + current.getName().substring(0, current.getName().length() - 6);
-                ApplicationClasses.ApplicationClass applicationClass = new ApplicationClasses.ApplicationClass();
-                applicationClass.name = classname;
-                applicationClass.timestamp = current.lastModified();
-                applicationClass.javaFile = getJavaFile(current.getRealFile().getAbsolutePath());
-                Play.classloader.loadPrecompiledClass(applicationClass, current.getRealFile());
-                classes.add(applicationClass);
-            }
-        } else {
-            for (VirtualFile virtualFile : current.list()) {
-                scanPrecompiled(classes, packageName + current.getName() + ".", virtualFile);
-            }
-        }
     }
 
     public static BaseTemplate loadTemplate(VirtualFile file) {
