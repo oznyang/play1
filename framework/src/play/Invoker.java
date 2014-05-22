@@ -190,13 +190,18 @@ public class Invoker {
             Lang.clear();
         }
 
+        private static long LAST_DETECT_CHANGE;
+
         /**
          * Init the call (especially usefull in DEV mode to detect changes)
          */
         public boolean init() {
             Thread.currentThread().setContextClassLoader(Play.classloader);
             long start = System.currentTimeMillis();
-            Play.detectChanges();
+            if (start - LAST_DETECT_CHANGE > 500) {
+                Play.detectChanges();
+                LAST_DETECT_CHANGE = start;
+            }
             if (Logger.isTraceEnabled()) {
                 Logger.trace("%sms to detectChanges", System.currentTimeMillis() - start);
             }
