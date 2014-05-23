@@ -2,6 +2,7 @@ package play.db.jpa;
 
 import javassist.CtClass;
 import javassist.CtMethod;
+import javassist.Modifier;
 import javassist.bytecode.*;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.classloading.enhancers.Enhancer;
@@ -42,6 +43,7 @@ public class JPAEnhancer extends Enhancer {
 
         // count2
         CtMethod count2 = CtMethod.make("public static long count(String query, Object[] params) { return play.db.jpa.JPQL.instance.count(\"" + dbName + "\", \"" + entityName + "\", query, params); }", ctClass);
+        count2.setModifiers(count2.getModifiers() | Modifier.VARARGS);
         ctClass.addMethod(count2);
 
         // findAll
@@ -50,10 +52,12 @@ public class JPAEnhancer extends Enhancer {
 
         // findById
         CtMethod findById = CtMethod.make("public static play.db.jpa.JPABase findById(Object id) { return play.db.jpa.JPQL.instance.findById(\"" + dbName + "\",\"" + entityName + "\", id); }", ctClass);
+        findById.setGenericSignature("<T:Lplay/db/jpa/JPABase;>(Ljava/lang/Object;)TT;");
         ctClass.addMethod(findById);
 
         // find
         CtMethod find = CtMethod.make("public static play.db.jpa.GenericModel.JPAQuery find(String query, Object[] params) { return play.db.jpa.JPQL.instance.find(\"" + dbName + "\", \"" + entityName + "\", query, params); }", ctClass);
+        find.setModifiers(find.getModifiers() | Modifier.VARARGS);
         ctClass.addMethod(find);
 
         // find
@@ -66,6 +70,7 @@ public class JPAEnhancer extends Enhancer {
 
         // delete
         CtMethod delete = CtMethod.make("public static int delete(String query, Object[] params) { return play.db.jpa.JPQL.instance.delete(\"" + dbName + "\", \"" + entityName + "\", query, params); }", ctClass);
+        delete.setModifiers(delete.getModifiers() | Modifier.VARARGS);
         ctClass.addMethod(delete);
 
         // deleteAll
@@ -74,10 +79,13 @@ public class JPAEnhancer extends Enhancer {
 
         // findOneBy
         CtMethod findOneBy = CtMethod.make("public static play.db.jpa.JPABase findOneBy(String query, Object[] params) { return play.db.jpa.JPQL.instance.findOneBy(\"" + dbName + "\", \"" + entityName + "\", query, params); }", ctClass);
+        findOneBy.setModifiers(findOneBy.getModifiers() | Modifier.VARARGS);
+        findOneBy.setGenericSignature("<T:Lplay/db/jpa/JPABase;>(Ljava/lang/String;[Ljava/lang/Object;)TT;");
         ctClass.addMethod(findOneBy);
 
         // create
         CtMethod create = CtMethod.make("public static play.db.jpa.JPABase create(String name, play.mvc.Scope.Params params) { return play.db.jpa.JPQL.instance.create(\"" + dbName + "\", \"" + entityName + "\", name, params); }", ctClass);
+        create.setGenericSignature("<T:Lplay/db/jpa/JPABase;>(Ljava/lang/String;Lplay/mvc/Scope$Params;)TT;");
         ctClass.addMethod(create);
 
         // Done.
