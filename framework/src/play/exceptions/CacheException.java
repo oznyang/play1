@@ -19,10 +19,10 @@ public class CacheException extends PlayException {
         StackTraceElement element = getInterestingStrackTraceElement(cause);
         if(element != null) {
             ApplicationClass applicationClass = Play.classes.getApplicationClass(element.getClassName());
-            if (applicationClass.javaFile != null)
-                sourceFile = applicationClass.javaFile.relativePath();
-            if (applicationClass.javaSource != null)
-                source = Arrays.asList(applicationClass.javaSource.split("\n"));
+            if (applicationClass.javaFile != null) {
+                this.sourceFile = applicationClass.javaFile.relativePath();
+                this.source = Arrays.asList(applicationClass.javaSource.split("\n"));
+            }
             line = element.getLineNumber();
         }
     }

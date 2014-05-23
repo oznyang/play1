@@ -20,6 +20,7 @@ import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 import play.Logger;
 import play.Play;
+import play.classloading.ApplicationClasses;
 import play.mvc.Http.Request;
 import play.mvc.Http.Response;
 import play.mvc.Router;
@@ -231,9 +232,12 @@ public class TestEngine {
             current.trace = failure.getTrace();
             for (StackTraceElement stackTraceElement : failure.getException().getStackTrace()) {
                 if (stackTraceElement.getClassName().equals(className)) {
-                    current.sourceInfos = "In " + Play.classes.getApplicationClass(className).javaFile.relativePath() + ", line " + stackTraceElement.getLineNumber();
-                    current.sourceCode = Play.classes.getApplicationClass(className).javaSource.split("\n")[stackTraceElement.getLineNumber() - 1];
-                    current.sourceFile = Play.classes.getApplicationClass(className).javaFile.relativePath();
+                    ApplicationClasses.ApplicationClass applicationClass = Play.classes.getApplicationClass(className);
+                    if (applicationClass.javaFile != null) {
+                        current.sourceInfos = "In " + applicationClass.javaFile.relativePath() + ", line " + stackTraceElement.getLineNumber();
+                        current.sourceCode = applicationClass.javaSource.split("\n")[stackTraceElement.getLineNumber() - 1];
+                        current.sourceFile = applicationClass.javaFile.relativePath();
+                    }
                     current.sourceLine = stackTraceElement.getLineNumber();
                 }
             }

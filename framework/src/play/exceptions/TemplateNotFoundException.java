@@ -22,8 +22,10 @@ public class TemplateNotFoundException extends PlayException implements SourceAt
     
     public TemplateNotFoundException(String path, ApplicationClass applicationClass, Integer line) {
         this(path);
-        this.sourceFile = applicationClass.javaFile.relativePath();
-        this.source = Arrays.asList(applicationClass.javaSource.split("\n"));
+        if (applicationClass.javaFile != null) {
+            this.sourceFile = applicationClass.javaFile.relativePath();
+            this.source = Arrays.asList(applicationClass.javaSource.split("\n"));
+        }
         this.line = line;
     }
     

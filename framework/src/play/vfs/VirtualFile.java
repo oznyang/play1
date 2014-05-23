@@ -4,20 +4,18 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.Channel;
-import java.nio.channels.FileChannel;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.IOUtils;
 import play.Play;
 import play.exceptions.UnexpectedException;
 import play.libs.IO;
@@ -42,43 +40,31 @@ public class VirtualFile {
     }
 
     public String relativePath() {
-        List<String> path = new ArrayList<String>();
-        File f = realFile;
-        String prefix = "{?}";
-        while (true) {
-            path.add(f.getName());
-            f = f.getParentFile();
-            if (f == null) {
-                break; // ??
+        String path = realFile.getAbsolutePath();
+        String relPath;
+        for (int i = 1, len = Play.roots.size(); i < len; i++) {
+            VirtualFile vf = Play.roots.get(i);
+            relPath = getRelPath(vf.getRealFile(), path);
+            if (relPath != null) {
+                return "{module:" + vf.getName() + "}" + relPath;
             }
-            if (f.equals(Play.frameworkPath)) {
-                prefix = "{play}";
-                break;
-            }
-            if (f.equals(Play.applicationPath)) {
-                prefix = "";
-                break;
-            }
-            String module = isRoot(f);
-            if (module != null) {
-                prefix = module;
-                break;
-            }
-
         }
-        Collections.reverse(path);
-        StringBuilder builder = new StringBuilder();
-        for (String p : path) {
-            builder.append("/" + p);
+        relPath = getRelPath(Play.applicationPath, path);
+        if (relPath != null) {
+            return relPath;
         }
-        return prefix + builder.toString();
+        relPath = getRelPath(Play.frameworkPath, path);
+        if (relPath != null) {
+            return "{play}" + relPath;
+        }
+        return "{?}" + path;
     }
 
-    String isRoot(File f) {
-        for (VirtualFile vf : Play.roots) {
-            if (vf.realFile.getAbsolutePath().equals(f.getAbsolutePath())) {
-                return "{module:" + vf.getName() + "}";
-            }
+    private String getRelPath(File file, String subFile) {
+        String path = file.getAbsolutePath();
+        int pos = subFile.indexOf(path);
+        if (pos > -1) {
+            return subFile.substring(path.length());
         }
         return null;
     }
@@ -86,9 +72,8 @@ public class VirtualFile {
     public List<VirtualFile> list() {
         List<VirtualFile> res = new ArrayList<VirtualFile>();
         if (exists()) {
-            File[] children = realFile.listFiles();
-            for (int i = 0; i < children.length; i++) {
-                res.add(new VirtualFile(children[i]));
+            for (File aChildren : realFile.listFiles()) {
+                res.add(new VirtualFile(aChildren));
             }
         }
         return res;
@@ -96,10 +81,7 @@ public class VirtualFile {
 
     public boolean exists() {
         try {
-            if (realFile != null) {
-                return realFile.exists();
-            }
-            return false;
+            return realFile != null && realFile.exists();
         } catch (AccessControlException e) {
             return false;
         }
@@ -159,19 +141,11 @@ public class VirtualFile {
         FileInputStream fis = null;
         try {
             fis = new FileInputStream(realFile);
-            FileChannel ch = fis.getChannel();
-            return ch;
+            return fis.getChannel();
         } catch (FileNotFoundException e) {
             return null;
-        }finally{
-            try {
-                if (fis != null) {
-                    fis.close();
-                }
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+        } finally {
+            IOUtils.closeQuietly(fis);
         }
     }
 
@@ -195,6 +169,10 @@ public class VirtualFile {
         return realFile;
     }
 
+    public String getAbsolutePath(){
+        return realFile.getAbsolutePath();
+    }
+
     public void write(CharSequence string) {
         try {
             IO.writeContent(string, outputstream());
@@ -205,13 +183,16 @@ public class VirtualFile {
 
     public byte[] content() {
         byte[] buffer = new byte[(int) length()];
+        InputStream is=null;
         try {
-            InputStream is = inputstream();
+            is = inputstream();
             is.read(buffer);
             is.close();
             return buffer;
         } catch (Exception e) {
             throw new UnexpectedException(e);
+        } finally {
+            IOUtils.closeQuietly(is);
         }
     }
 

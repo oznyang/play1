@@ -404,7 +404,7 @@ public class ApplicationClassloader extends ClassLoader {
                         continue;
                     }
                     for (ApplicationClass ac : Play.classes.all()) {
-                        if (ac.javaFile.equals(vf)) {
+                        if (vf.equals(ac.javaFile)) {
                             Play.classes.classes.remove(ac.name);
                         }
                     }

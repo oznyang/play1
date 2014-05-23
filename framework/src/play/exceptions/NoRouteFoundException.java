@@ -25,8 +25,10 @@ public class NoRouteFoundException extends PlayException implements SourceAttach
 
     public NoRouteFoundException(String file, ApplicationClass applicationClass, Integer line) {
         this(file);
-        this.sourceFile = applicationClass.javaFile.relativePath();
-        this.source = Arrays.asList(applicationClass.javaSource.split("\n"));
+        if (applicationClass.javaFile != null) {
+            this.sourceFile = applicationClass.javaFile.relativePath();
+            this.source = Arrays.asList(applicationClass.javaSource.split("\n"));
+        }
         this.line = line;
     }
 
@@ -48,11 +50,13 @@ public class NoRouteFoundException extends PlayException implements SourceAttach
     
     public NoRouteFoundException(String action, Map<String, Object> args, ApplicationClass applicationClass, Integer line) {
         this(action, args);
-        this.sourceFile = applicationClass.javaFile.relativePath();
-        this.source = Arrays.asList(applicationClass.javaSource.split("\n"));
+        if (applicationClass.javaFile != null) {
+            this.sourceFile = applicationClass.javaFile.relativePath();
+            this.source = Arrays.asList(applicationClass.javaSource.split("\n"));
+        }
         this.line = line;
     }
-    
+
     public NoRouteFoundException(String action, Map<String, Object> args, Template template, Integer line) {
         this(action, args);
         this.sourceFile = template.name;

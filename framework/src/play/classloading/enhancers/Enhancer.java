@@ -209,7 +209,7 @@ public abstract class Enhancer {
     }
 
     boolean isScala(ApplicationClass app) {
-        return app.javaFile.getName().endsWith(".scala");
+        return app.javaFile != null && app.javaFile.getName().endsWith(".scala");
     }
 
     boolean isAnon(ApplicationClass app) {
