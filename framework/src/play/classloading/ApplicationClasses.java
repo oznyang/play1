@@ -30,6 +30,8 @@ public class ApplicationClasses {
      */
     Map<String, ApplicationClass> classes = new HashMap<String, ApplicationClass>();
 
+    Map<String, String> lowerCaseNamesCache = new HashMap<String, String>();
+
     /**
      * Clear the classes cache
      */

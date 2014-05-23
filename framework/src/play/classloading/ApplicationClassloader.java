@@ -14,8 +14,6 @@ import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -115,6 +113,7 @@ public class ApplicationClassloader extends ClassLoader {
             if (!applicationClass.isClass()) {
                 applicationClass.javaPackage = applicationClass.javaClass.getPackage();
             }
+            applicationClass.javaSource = applicationClass.javaFile == null ? "" : applicationClass.javaFile.contentAsString();
             return clazz;
         } catch (Exception e) {
             throw new RuntimeException("Load precompiled class file [" + file.getAbsolutePath() + "] for " + name + " error");
@@ -515,9 +514,14 @@ public class ApplicationClassloader extends ClassLoader {
      * @return a class
      */
     public Class getClassIgnoreCase(String name) {
+        String ogName = Play.classes.lowerCaseNamesCache.get(name.toLowerCase());
+        if (ogName != null) {
+            return loadApplicationClass(ogName);
+        }
         getAllClasses();
         for (ApplicationClass c : Play.classes.all()) {
             if (c.name.equalsIgnoreCase(name) || c.name.replace("$", ".").equalsIgnoreCase(name)) {
+                Play.classes.lowerCaseNamesCache.put(name.toLowerCase(), c.name);
                 if (Play.usePrecompiled) {
                     return c.javaClass;
                 }

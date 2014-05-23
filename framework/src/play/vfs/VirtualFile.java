@@ -61,10 +61,10 @@ public class VirtualFile {
     }
 
     private String getRelPath(File file, String subFile) {
-        String path = file.getAbsolutePath();
+        String path = file.getAbsolutePath() + File.separator;
         int pos = subFile.indexOf(path);
         if (pos > -1) {
-            return subFile.substring(path.length());
+            return subFile.substring(path.length() - 1);
         }
         return null;
     }

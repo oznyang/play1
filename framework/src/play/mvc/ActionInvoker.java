@@ -594,10 +594,7 @@ public class ActionInvoker {
             }
             String controller = fullAction.substring(0, fullAction.lastIndexOf("."));
             String action = fullAction.substring(fullAction.lastIndexOf(".") + 1);
-            controllerClass = Play.classloader.loadApplicationClass(controller);
-            if (controllerClass == null) {
-                controllerClass = Play.classloader.getClassIgnoreCase(controller);
-            }
+            controllerClass = Play.classloader.getClassIgnoreCase(controller);
             if (controllerClass == null) {
                 throw new ActionNotFoundException(fullAction, new Exception("Controller " + controller + " not found"));
             }
