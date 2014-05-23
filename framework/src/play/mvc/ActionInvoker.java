@@ -13,6 +13,7 @@ import org.apache.commons.lang.StringUtils;
 import play.Logger;
 import play.Play;
 import play.cache.CacheFor;
+import play.classloading.ClassCache;
 import play.classloading.enhancers.ControllersEnhancer.ControllerInstrumentation;
 import play.classloading.enhancers.ControllersEnhancer.ControllerSupport;
 import play.data.binding.Binder;
@@ -593,7 +594,10 @@ public class ActionInvoker {
             }
             String controller = fullAction.substring(0, fullAction.lastIndexOf("."));
             String action = fullAction.substring(fullAction.lastIndexOf(".") + 1);
-            controllerClass = Play.classloader.getClassIgnoreCase(controller);
+            controllerClass = Play.classloader.loadApplicationClass(controller);
+            if (controllerClass == null) {
+                controllerClass = Play.classloader.getClassIgnoreCase(controller);
+            }
             if (controllerClass == null) {
                 throw new ActionNotFoundException(fullAction, new Exception("Controller " + controller + " not found"));
             }
@@ -604,7 +608,7 @@ public class ActionInvoker {
                     throw new ActionNotFoundException(fullAction, new Exception("class " + controller + " does not extend play.mvc.Controller"));
                 }
             }
-            actionMethod = Java.findActionMethod(action, controllerClass);
+            actionMethod = ClassCache.findActionMethod(action, controllerClass);
             if (actionMethod == null) {
                 throw new ActionNotFoundException(fullAction, new Exception("No method public static void " + action + "() was found in class " + controller));
             }

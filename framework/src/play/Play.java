@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 import play.cache.Cache;
 import play.classloading.ApplicationClasses;
 import play.classloading.ApplicationClassloader;
+import play.classloading.ClassCache;
 import play.deps.DependenciesManager;
 import play.exceptions.PlayException;
 import play.exceptions.UnexpectedException;
@@ -500,7 +501,7 @@ public class Play {
                 Thread.currentThread().setContextClassLoader(classloader);
                 // Reload plugins
                 pluginCollection.reloadApplicationPlugins();
-
+                ClassCache.cleanAll();
             }
 
             // Reload configuration

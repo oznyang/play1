@@ -4,7 +4,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import javassist.CannotCompileException;
@@ -18,8 +17,8 @@ import javassist.NotFoundException;
 import javassist.expr.ExprEditor;
 import javassist.expr.FieldAccess;
 import play.Logger;
-import play.Play;
 import play.classloading.ApplicationClasses.ApplicationClass;
+import play.classloading.ClassCache;
 import play.exceptions.UnexpectedException;
 
 /**
@@ -159,7 +158,7 @@ public class PropertiesEnhancer extends Enhancer {
                                 if (fieldAccess.isReader()) {
 
                                     // Rewrite read access to the property
-                                    fieldAccess.replace("$_ = ($r)play.classloading.enhancers.PropertiesEnhancer.FieldAccessor.invokeReadProperty($0, \"" + fieldAccess.getFieldName() + "\", \"" + fieldAccess.getClassName() + "\", \"" + invocationPoint + "\");");
+                                    fieldAccess.replace("$_ = ($r)play.classloading.enhancers.PropertiesEnhancer.FieldAccessor.invokeReadProperty($0, \"" + fieldAccess.getFieldName() + "\", " + fieldAccess.getClassName() + ".class, \"" + invocationPoint + "\");");
 
                                 } else if (!isFinal(fieldAccess.getField()) && fieldAccess.isWriter()) {
 
@@ -208,22 +207,16 @@ public class PropertiesEnhancer extends Enhancer {
      */
     public static class FieldAccessor {
 
-        public static Object invokeReadProperty(Object o, String property, String targetType, String invocationPoint) throws Throwable {
+        public static Object invokeReadProperty(Object o, String property, Class targetType, String invocationPoint) throws Throwable {
             if (o == null) {
                 throw new NullPointerException("Try to read " + property + " on null object " + targetType + " (" + invocationPoint + ")");
             }
-            if (o.getClass().getClassLoader() == null || !o.getClass().getClassLoader().equals(Play.classloader)) {
-                return o.getClass().getField(property).get(o);
-            }
-            String getter = "get" + property.substring(0, 1).toUpperCase() + property.substring(1);
-            try {
-                Method getterMethod = o.getClass().getMethod(getter);
-                Object result = getterMethod.invoke(o);
-                return result;
-            } catch (NoSuchMethodException e) {
-                return o.getClass().getField(property).get(o);
-            } catch (InvocationTargetException e) {
-                throw e.getCause();
+            String getter = (Boolean.class == targetType ? "is" : "get") + property.substring(0, 1).toUpperCase() + property.substring(1);
+            Method getterMethod = ClassCache.getMethod(o, getter);
+            if (getterMethod != null) {
+                return getterMethod.invoke(o);
+            } else {
+                return ClassCache.getField(o, property).get(o);
             }
         }
 
@@ -264,13 +257,11 @@ public class PropertiesEnhancer extends Enhancer {
                 throw new NullPointerException("Attempting to write a property " + property + " on a null object of type " + targetType + " (" + invocationPoint + ")");
             }
             String setter = "set" + property.substring(0, 1).toUpperCase() + property.substring(1);
-            try {
-                Method setterMethod = o.getClass().getMethod(setter, valueType);
+            Method setterMethod = ClassCache.getMethod(o, setter, valueType);
+            if (setterMethod != null) {
                 setterMethod.invoke(o, value);
-            } catch (NoSuchMethodException e) {
-                o.getClass().getField(property).set(o, value);
-            } catch (InvocationTargetException e) {
-                throw e.getCause();
+            } else {
+                ClassCache.getField(o, property).set(o, value);
             }
         }
     }

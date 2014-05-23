@@ -372,6 +372,9 @@ public class ApplicationClassloader extends ClassLoader {
             if (HotswapAgent.enabled) {
                 try {
                     HotswapAgent.reload(newDefinitions.toArray(new ClassDefinition[newDefinitions.size()]));
+                    for (ClassDefinition cd : newDefinitions) {
+                        ClassCache.clean(cd.getDefinitionClass());
+                    }
                 } catch (Throwable e) {
                     throw new RuntimeException("Need reload");
                 }
