@@ -18,6 +18,10 @@
         font-size: 28px;
         margin: 0;
     }
+    #header pre {
+        word-wrap: break-word;
+        font-size: 14px;
+    }
     #more {
         color: #666;
         font-size: 80%;
@@ -90,9 +94,9 @@
             ${exception.errorTitle} 
         </h1>
         #{if play.Play.mode.name() == 'DEV'}
-        <p>
+        <pre>
             ${exception.errorDescription.raw()}
-        </p>
+        </pre>
         #{/if}
         #{if play.Play.mode.name() == 'PROD'}
         <p>

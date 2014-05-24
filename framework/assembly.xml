@@ -10,10 +10,17 @@
     <includeBaseDirectory>false</includeBaseDirectory>
     <fileSets>
         <fileSet>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory>framework</outputDirectory>
             <includes>
                 <include>templates/</include>
-                <include>resources/</include>
+                <include>../resources/</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>../</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>resources/messages</include>
             </includes>
         </fileSet>
     </fileSets>

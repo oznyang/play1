@@ -171,7 +171,7 @@ public class JPAPlugin extends PlayPlugin {
             }
 
             cfg.setInterceptor(new HibernateInterceptor());
-            JPA.emfs.put(dbName, cfg.buildEntityManagerFactory());
+            JPA.addEntityManagerFactory(dbName, cfg.buildEntityManagerFactory());
         }
         JPQL.instance = new JPQL();
     }
@@ -270,46 +270,38 @@ public class JPAPlugin extends PlayPlugin {
     }
 
     public static void startTx(boolean readonly) {
-        if (!JPA.isEnabled()) {
-             return;
+        EntityManagerFactory emf = JPA.emf();
+        if (emf == null) {
+            return;
         }
-        EntityManager manager = JPA.createEntityManager();
+        EntityManager manager = emf.createEntityManager();
         manager.setFlushMode(FlushModeType.COMMIT);
-        manager.setProperty("org.hibernate.readOnly", readonly);
+        JPA.createContext(manager, readonly);
         if (autoTxs) {
             manager.getTransaction().begin();
         }
-        JPA.createContext(manager, readonly);
     }
-
 
     /**
      * clear current JPA context and transaction
      * @param rollback shall current transaction be committed (false) or cancelled (true)
-     * @Deprecated see JPA rollback() and closeTx() method
      */
     public static void closeTx(boolean rollback) {
-        if (!JPA.isEnabled() || !JPA.isInitialized(JPA.DEFAULT)) {
+        JPA.JPAContext jpaContext = JPA.getContext();
+        if (jpaContext == null) {
             return;
         }
-        EntityManager manager = JPA.em();
+        EntityManager manager = jpaContext.entityManager;
         try {
             if (autoTxs) {
-                // Be sure to set the connection is non-autoCommit mode as some driver will complain about COMMIT statement
-                try {
-                    DB.getConnection().setAutoCommit(false);
-                } catch(Exception e) {
-                    Logger.error(e, "Why the driver complains here?");
-                }
                 // Commit the transaction
-                if (manager.getTransaction().isActive()) {
-                    if (JPA.get().get("default").readonly || rollback || manager.getTransaction().getRollbackOnly()) {
+                EntityTransaction tx = manager.getTransaction();
+                if (tx.isActive()) {
+                    if (jpaContext.readonly || rollback || tx.getRollbackOnly()) {
                         manager.getTransaction().rollback();
                     } else {
                         try {
-                            if (autoTxs) {
-                                manager.getTransaction().commit();
-                            }
+                            manager.getTransaction().commit();
                         } catch (Throwable e) {
                             for (int i = 0; i < 10; i++) {
                                 if (e instanceof PersistenceException && e.getCause() != null) {

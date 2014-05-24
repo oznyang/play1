@@ -1,6 +1,7 @@
 package play.utils;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.BOMInputStream;
 import org.apache.commons.lang.StringEscapeUtils;
 
 import java.io.ByteArrayInputStream;
@@ -22,7 +23,7 @@ public class OrderSafeProperties extends java.util.Properties {
     public void load(InputStream inputStream) throws IOException {
 
         // read all lines from file as utf-8
-        List<String> lines = IOUtils.readLines(inputStream, "utf-8");
+        List<String> lines = IOUtils.readLines(new BOMInputStream(inputStream), "utf-8");
         IOUtils.closeQuietly(inputStream);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();

@@ -550,9 +550,6 @@ public class Play {
             // Routes
             Router.detectChanges(ctxPath);
 
-            // Cache
-            Cache.init();
-
             // Plugins
             try {
                 pluginCollection.onApplicationStart();
@@ -565,6 +562,9 @@ public class Play {
                 }
                 throw new UnexpectedException(e);
             }
+
+            // Cache
+            Cache.init();
 
             if (firstStart) {
                 Logger.info("Application '%s' is now started !", configuration.getProperty("application.name", ""));

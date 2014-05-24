@@ -16,6 +16,7 @@ import org.hibernate.internal.SessionImpl;
 
 import com.sun.rowset.CachedRowSetImpl;
 
+import play.Play;
 import play.db.jpa.JPA;
 import play.exceptions.DatabaseException;
 import play.Logger;
@@ -83,16 +84,33 @@ public class DB {
 
     static ThreadLocal<Map<String, Connection>> localConnection = new ThreadLocal<Map<String, Connection>>();
 
-   
+    public static void addDataSource(String name, DataSource ds) {
+        datasources.put(name, new DB.ExtendedDatasource(ds, Play.configuration.getProperty("db." + name + ".destroyMethod", "")));
+        if (DEFAULT.equals(name)) {
+            datasource = ds;
+        }
+    }
+
+    public static void removeDataSource(String name){
+        datasources.remove(name);
+        if (DEFAULT.equals(name)) {
+            datasource = null;
+        }
+    }
+
     public static DataSource getDataSource(String name) {
-        if (datasources.get(name) != null) {
-            return datasources.get(name).getDataSource();
+        if (DEFAULT.equals(name)) {
+            return datasource;
+        }
+        ExtendedDatasource ds = datasources.get(name);
+        if (ds != null) {
+            return ds.getDataSource();
         }
         return null;
     }
 
     public static DataSource getDataSource() {
-        return getDataSource(DEFAULT);
+        return datasource;
     }
 
     public static Connection getConnection(String name, boolean autocommit) {

@@ -4,12 +4,10 @@ import play.Invoker.InvocationContext;
 import play.Invoker.Suspend;
 import play.exceptions.JPAException;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.EntityTransaction;
-import javax.persistence.PersistenceUnit;
+import javax.persistence.*;
 import java.util.HashMap;
 import java.util.Map;
+
 /**
  * JPA Support
  */
@@ -19,7 +17,7 @@ public class JPA {
     static Map<String, EntityManagerFactory> emfs = new HashMap<String, EntityManagerFactory>();
     private static ThreadLocal<Map<String, JPAContext>> ems = new ThreadLocal<Map<String, JPAContext>>();
 
-    static class JPAContext {
+    public static class JPAContext {
         public EntityManager entityManager;
         public boolean readonly = true;
     }
@@ -32,25 +30,46 @@ public class JPA {
         return jpaContexts;
     }
 
-    static void clearContext() {
-        ems.remove();
+    public static JPAContext createContext(boolean readonly) {
+        EntityManager em = createEntityManager();
+        em.setFlushMode(FlushModeType.COMMIT);
+        return createContext(em, readonly);
     }
 
-    static void createContext(EntityManager entityManager, boolean readonly) {
-        Map<String, JPAContext> jpaContexts;
-        if (isInitialized()) {
-            jpaContexts = get();
-        } else {
+    public static JPAContext createContext(EntityManager entityManager, boolean readonly) {
+        Map<String, JPAContext> jpaContexts = ems.get();
+        if (jpaContexts == null) {
             ems.set(jpaContexts = new HashMap<String, JPAContext>());
         }
         JPAContext context = new JPAContext();
         context.entityManager = entityManager;
         context.readonly = readonly;
         jpaContexts.put(DEFAULT, context);
+        return context;
+    }
+
+    public static void clearContext() {
+        ems.remove();
+    }
+
+    public static JPAContext getContext() {
+        Map<String, JPAContext> jpaContexts = ems.get();
+        if (jpaContexts == null) {
+            return null;
+        }
+        return jpaContexts.get(DEFAULT);
+    }
+
+    public static void addEntityManagerFactory(String dbName, EntityManagerFactory entityManagerFactory) {
+        emfs.put(dbName, entityManagerFactory);
+    }
+
+    public static void removeEntityManagerFactory(String dbName) {
+        emfs.remove(dbName);
     }
 
     public static boolean isInitialized() {
-        return ems.get() != null;
+        return isInitialized(DEFAULT);
     }
 
     public static boolean isInitialized(String key) {
@@ -145,6 +164,7 @@ public class JPA {
                 ems.set(jpaContexts);
                 for (Map.Entry<String, EntityManagerFactory> entry : emfs.entrySet()) {
                     EntityManager em = entry.getValue().createEntityManager();
+                    em.setFlushMode(FlushModeType.COMMIT);
                     JPAContext context = new JPAContext();
                     context.entityManager = em;
                     context.readonly = readonly;

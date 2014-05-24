@@ -91,7 +91,7 @@ public abstract class AbstractPlayMojo extends AbstractMojo {
             Artifact artifact = (Artifact) obj;
             if ("com.wisorg.playframework".equals(artifact.getGroupId()) && "zip".endsWith(artifact.getType())) {
                 if ("play".equals(artifact.getArtifactId()) && "resource".equals(artifact.getClassifier())) {
-                    extractArtifact(artifact, getPlayHomeDir("framework"), false);
+                    extractArtifact(artifact, getPlayHome(), false);
                 } else if ("play-documentation".equals(artifact.getArtifactId())) {
                     extractArtifact(artifact, getPlayHomeDir("documentation"), false);
                 } else if ("testrunner".equals(artifact.getArtifactId())) {
