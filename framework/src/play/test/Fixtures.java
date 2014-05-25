@@ -15,7 +15,6 @@ import play.data.binding.ParamNode;
 import play.data.binding.RootParamNode;
 import play.data.binding.types.DateBinder;
 import play.db.DB;
-import play.db.DBPlugin;
 import play.db.SQLSplitter;
 import play.db.Model;
 import play.db.jpa.JPAPlugin;
@@ -528,7 +527,8 @@ public class Fixtures {
     }
 
     private static void disableForeignKeyConstraints() {
-        if (DBPlugin.url.startsWith("jdbc:oracle:")) {
+        String url = Play.configuration.getProperty("db.url");
+        if (url.startsWith("jdbc:oracle:")) {
             DB.execute("begin\n"
                     + "for i in (select constraint_name, table_name from user_constraints where constraint_type ='R'\n"
                     + "and status = 'ENABLED') LOOP\n"
@@ -539,27 +539,27 @@ public class Fixtures {
             return;
         }
 
-        if (DBPlugin.url.startsWith("jdbc:hsqldb:")) {
+        if (url.startsWith("jdbc:hsqldb:")) {
             DB.execute("SET REFERENTIAL_INTEGRITY FALSE");
             return;
         }
 
-        if (DBPlugin.url.startsWith("jdbc:h2:")) {
+        if (url.startsWith("jdbc:h2:")) {
             DB.execute("SET REFERENTIAL_INTEGRITY FALSE");
             return;
         }
 
-        if (DBPlugin.url.startsWith("jdbc:mysql:")) {
+        if (url.startsWith("jdbc:mysql:")) {
             DB.execute("SET foreign_key_checks = 0;");
             return;
         }
 
-        if (DBPlugin.url.startsWith("jdbc:postgresql:")) {
+        if (url.startsWith("jdbc:postgresql:")) {
             DB.execute("SET CONSTRAINTS ALL DEFERRED");
             return;
         }
 
-        if (DBPlugin.url.startsWith("jdbc:sqlserver:")) {
+        if (url.startsWith("jdbc:sqlserver:")) {
             Statement exec=null;
 
             try {
@@ -586,11 +586,12 @@ public class Fixtures {
         }
 
         // Maybe Log a WARN for unsupported DB ?
-        Logger.warn("Fixtures : unable to disable constraints, unsupported database : " + DBPlugin.url);
+        Logger.warn("Fixtures : unable to disable constraints, unsupported database : " + url);
     }
 
     private static void enableForeignKeyConstraints() {
-        if (DBPlugin.url.startsWith("jdbc:oracle:")) {
+        String url = Play.configuration.getProperty("db.url");
+        if (url.startsWith("jdbc:oracle:")) {
             DB.execute("begin\n"
                     + "for i in (select constraint_name, table_name from user_constraints where constraint_type ='R'\n"
                     + "and status = 'DISABLED') LOOP\n"
@@ -601,26 +602,26 @@ public class Fixtures {
             return;
         }
 
-        if (DBPlugin.url.startsWith("jdbc:hsqldb:")) {
+        if (url.startsWith("jdbc:hsqldb:")) {
             DB.execute("SET REFERENTIAL_INTEGRITY TRUE");
             return;
         }
 
-        if (DBPlugin.url.startsWith("jdbc:h2:")) {
+        if (url.startsWith("jdbc:h2:")) {
             DB.execute("SET REFERENTIAL_INTEGRITY TRUE");
             return;
         }
 
-        if (DBPlugin.url.startsWith("jdbc:mysql:")) {
+        if (url.startsWith("jdbc:mysql:")) {
             DB.execute("SET foreign_key_checks = 1;");
             return;
         }
 
-        if (DBPlugin.url.startsWith("jdbc:postgresql:")) {
+        if (url.startsWith("jdbc:postgresql:")) {
             return;
         }
 
-        if (DBPlugin.url.startsWith("jdbc:sqlserver:")) {
+        if (url.startsWith("jdbc:sqlserver:")) {
            Connection connect = null;
             Statement exec=null;
             try {
@@ -648,15 +649,16 @@ public class Fixtures {
             return;
           }
 
-        Logger.warn("Fixtures : unable to enable constraints, unsupported database : " + DBPlugin.url);
+        Logger.warn("Fixtures : unable to enable constraints, unsupported database : " + url);
     }
 
     static String getDeleteTableStmt(String name) {
-        if (DBPlugin.url.startsWith("jdbc:mysql:") ) {
+        String url = Play.configuration.getProperty("db.url");
+        if (url.startsWith("jdbc:mysql:") ) {
             return "TRUNCATE TABLE " + name;
-        } else if (DBPlugin.url.startsWith("jdbc:postgresql:")) {
+        } else if (url.startsWith("jdbc:postgresql:")) {
             return "TRUNCATE TABLE " + name + " cascade";
-        } else if (DBPlugin.url.startsWith("jdbc:oracle:")) {
+        } else if (url.startsWith("jdbc:oracle:")) {
             return "TRUNCATE TABLE " + name;
         }
         return "DELETE FROM " + name;

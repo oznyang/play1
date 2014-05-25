@@ -764,7 +764,7 @@ public class F {
         public abstract T get();
 
         public static <T> None<T> None() {
-            return (None<T>) (Object) None;
+            return (None<T>) None;
         }
 
         public static <T> Some<T> Some(T value) {
@@ -772,8 +772,12 @@ public class F {
         }
     }
 
+    public static <T> None<T> None(){
+        return (None<T>)None;
+    }
+
     public static <A> Some<A> Some(A a) {
-        return new Some(a);
+        return new Some<A>(a);
     }
 
     public static class None<T> extends Option<T> {
@@ -785,7 +789,7 @@ public class F {
 
         @Override
         public T get() {
-            throw new IllegalStateException("No value");
+            return null;
         }
 
         public Iterator<T> iterator() {

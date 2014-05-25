@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.annotation.Annotation;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -28,15 +29,15 @@ public class ApplicationClasses {
     /**
      * Cache of all compiled classes
      */
-    Map<String, ApplicationClass> classes = new HashMap<String, ApplicationClass>();
+    Map<String, ApplicationClass> classes = new ConcurrentHashMap<String, ApplicationClass>();
 
-    Map<String, String> lowerCaseNamesCache = new HashMap<String, String>();
+    Map<String, String> lowerCaseNamesCache = new ConcurrentHashMap<String, String>();
 
     /**
      * Clear the classes cache
      */
     public void clear() {
-        classes = new HashMap<String, ApplicationClass>();
+        classes.clear();
     }
 
     /**

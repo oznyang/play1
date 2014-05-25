@@ -1,5 +1,6 @@
 package play;
 
+import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URL;
@@ -54,6 +55,9 @@ public class Logger {
      * Try to init stuff.
      */
     public static void init() {
+        if(initLogback()){
+            return;
+        }
         String log4jPath = Play.configuration.getProperty("application.log.path", "/log4j.xml");
         URL log4jConf = Logger.class.getResource(log4jPath);
         boolean isXMLConfig = log4jPath.endsWith(".xml");
@@ -89,10 +93,45 @@ public class Logger {
                     Appender testLog = new FileAppender(new PatternLayout("%d{DATE} %-5p ~ %m%n"), Play.getFile("test-result/application.log").getAbsolutePath(), false);
                     rootLogger.addAppender(testLog);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
             }
         }
+    }
+
+    private static boolean initLogback() {
+        try {
+            Class.forName("ch.qos.logback.classic.Logger");
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+
+        if (System.getProperty("logback.configurationFile") == null) {
+            String xmlPath = Play.configuration.getProperty("application.log.path");
+            if (xmlPath == null || !xmlPath.contains("logback")) {
+                File xmlFile = new File(Play.applicationPath, "conf/logback.xml");
+                if (xmlFile.exists()) {
+                    xmlPath = xmlFile.getAbsolutePath();
+                }
+            }
+            if (xmlPath != null) {
+                System.setProperty("logback.configurationFile", xmlPath);
+            }
+        }
+
+        java.util.logging.Logger rootLogger = java.util.logging.Logger.getLogger("");
+        for (Handler handler : rootLogger.getHandlers()) {
+            rootLogger.removeHandler(handler);
+        }
+        Handler activeHandler = new JuliToLog4jHandler();
+        java.util.logging.Level juliLevel = toJuliLevel(Play.configuration.getProperty("application.log", "INFO"));
+        activeHandler.setLevel(juliLevel);
+        rootLogger.addHandler(activeHandler);
+        rootLogger.setLevel(juliLevel);
+
+        org.slf4j.LoggerFactory.getLogger(Play.class);
+        Logger.log4j = org.apache.log4j.Logger.getLogger("play");
+        return true;
     }
 
     /**
@@ -521,6 +560,12 @@ public class Logger {
         }
     }
 
+    static final String[] IGNORE_STACK_PREFIXS = new String[]{
+            "org.jboss.netty",
+            "org.springframework.aop",
+            "sun.reflect",
+            "java.util.concurrent"};
+
     /**
      * If e is a PlayException -> a very clean report
      */
@@ -532,35 +577,42 @@ public class Logger {
                 // Clean stack trace
                 List<StackTraceElement> cleanTrace = new ArrayList<StackTraceElement>();
                 for (StackTraceElement se : toClean.getStackTrace()) {
-                    if (se.getClassName().startsWith("play.server.PlayHandler$NettyInvocation")) {
+                    String name=se.getClassName();
+                    if (name.startsWith("play.server.PlayHandler$NettyInvocation")) {
                         cleanTrace.add(new StackTraceElement("Invocation", "HTTP Request", "Play!", -1));
                         break;
                     }
-                    if (se.getClassName().startsWith("play.server.PlayHandler$SslNettyInvocation")) {
+                    if (name.startsWith("play.server.PlayHandler$SslNettyInvocation")) {
                         cleanTrace.add(new StackTraceElement("Invocation", "HTTP Request", "Play!", -1));
                         break;
                     }
-                    if (se.getClassName().startsWith("play.jobs.Job") && se.getMethodName().equals("run")) {
+                    if (name.startsWith("play.jobs.Job") && se.getMethodName().equals("run")) {
                         cleanTrace.add(new StackTraceElement("Invocation", "Job", "Play!", -1));
                         break;
                     }
-                    if (se.getClassName().startsWith("play.server.PlayHandler") && se.getMethodName().equals("messageReceived")) {
+                    if (name.startsWith("play.server.PlayHandler") && se.getMethodName().equals("messageReceived")) {
                         cleanTrace.add(new StackTraceElement("Invocation", "Message Received", "Play!", -1));
                         break;
                     }
-                    if (se.getClassName().startsWith("sun.reflect.")) {
+                    if (name.startsWith("sun.reflect.")) {
                         continue; // not very interesting
                     }
-                    if (se.getClassName().startsWith("java.lang.reflect.")) {
+                    if (name.startsWith("java.lang.reflect.")) {
                         continue; // not very interesting
                     }
-                    if (se.getClassName().startsWith("com.mchange.v2.c3p0.")) {
+                    if (name.startsWith("com.mchange.v2.c3p0.")) {
                         continue; // not very interesting
                     }
-                    if (se.getClassName().startsWith("scala.tools.")) {
+                    if (name.startsWith("scala.tools.")) {
                         continue; // not very interesting
                     }
-                    if (se.getClassName().startsWith("scala.collection.")) {
+                    if (name.startsWith("scala.collection.")) {
+                        continue; // not very interesting
+                    }
+                    if (name.startsWith("org.springframework.aop.")) {
+                        continue; // not very interesting
+                    }
+                    if (name.startsWith("java.util.concurrent.")) {
                         continue; // not very interesting
                     }
                     cleanTrace.add(se);

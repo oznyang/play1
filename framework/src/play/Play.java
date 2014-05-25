@@ -204,6 +204,27 @@ public class Play {
 
         Play.classes = new ApplicationClasses();
 
+        // Mode
+        try {
+            String modeString = System.getProperty("play.mode");
+            mode = Mode.valueOf(modeString != null ? modeString.toUpperCase() : configuration.getProperty("application.mode", "DEV").toUpperCase());
+        } catch (IllegalArgumentException e) {
+            Logger.error("Illegal mode '%s', use either prod or dev", configuration.getProperty("application.mode"));
+            fatalServerErrorOccurred();
+        }
+
+        // Force the Production mode if forceProd or precompile is activate
+        // Set to the Prod mode must be done before loadModules call
+        // as some modules (e.g. DocViewver) is only available in DEV
+        if (usePrecompiled || forceProd || System.getProperty("precompile") != null) {
+            mode = Mode.PROD;
+        }
+
+        System.setProperty("play.appName", configuration.getProperty("application.name", ""));
+        if (mode.isProd()) {
+            System.setProperty("play.prod", "true");
+        }
+
         // Configure logs
         Logger.init();
         String logLevel = configuration.getProperty("application.log", "INFO");
@@ -245,22 +266,6 @@ public class Play {
                     Logger.warn("No tmp folder will be used (cannot create the tmp dir)");
                 }
             }
-        }
-
-        // Mode
-        try {
-            String modeString = System.getProperty("play.mode");
-            mode = Mode.valueOf(modeString != null ? modeString.toUpperCase() : configuration.getProperty("application.mode", "DEV").toUpperCase());
-        } catch (IllegalArgumentException e) {
-            Logger.error("Illegal mode '%s', use either prod or dev", configuration.getProperty("application.mode"));
-            fatalServerErrorOccurred();
-        }
-	
-        // Force the Production mode if forceProd or precompile is activate
-        // Set to the Prod mode must be done before loadModules call
-        // as some modules (e.g. DocViewver) is only available in DEV
-        if (usePrecompiled || forceProd || System.getProperty("precompile") != null) {
-            mode = Mode.PROD;
         }
 
         // Context path
@@ -502,6 +507,7 @@ public class Play {
                 // Reload plugins
                 pluginCollection.reloadApplicationPlugins();
                 ClassCache.cleanAll();
+                VirtualFile.cleanCache();
             }
 
             // Reload configuration

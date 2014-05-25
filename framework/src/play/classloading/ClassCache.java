@@ -1,6 +1,6 @@
 package play.classloading;
 
-import play.Play;
+import play.libs.F;
 import play.mvc.After;
 import play.mvc.Before;
 import play.mvc.Finally;
@@ -8,9 +8,9 @@ import play.mvc.Finally;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * .
@@ -20,9 +20,9 @@ import java.util.Map;
  * @version V1.0, 14-5-23
  */
 public class ClassCache {
-    private static Map<String, Method> METHODS = new HashMap<String, Method>();
-    private static Map<String, Field> FIELDS = new HashMap<String, Field>();
-    private static Map<String, Method> ACTION_METHODS = new HashMap<String, Method>();
+    private static Map<String, Method> METHODS = new ConcurrentHashMap<String, Method>();
+    private static Map<String, Field> FIELDS = new ConcurrentHashMap<String, Field>();
+    private static Map<String, F.Option<Method>> ACTION_METHODS = new ConcurrentHashMap<String, F.Option<Method>>();
 
     public static Method getMethod(Object obj, String name, Class... argTypes) {
         StringBuilder sb = new StringBuilder(obj.getClass().getName());
@@ -34,12 +34,11 @@ public class ClassCache {
         }
         String key = sb.toString();
         Method method = METHODS.get(key);
-        if (!METHODS.containsKey(key)) {
+        if (method == null) {
             try {
-                method = obj.getClass().getMethod(name, argTypes);
+                METHODS.put(key, method = obj.getClass().getMethod(name, argTypes));
             } catch (NoSuchMethodException ignored) {
             }
-            METHODS.put(key, method);
         }
         return method;
     }
@@ -47,35 +46,34 @@ public class ClassCache {
     public static Field getField(Object obj, String name) {
         String key = obj.getClass().getName() + "." + name;
         Field field = FIELDS.get(key);
-        if (!FIELDS.containsKey(key)) {
+        if (field == null) {
             try {
-                field = obj.getClass().getField(name);
+                FIELDS.put(key, field = obj.getClass().getField(name));
                 field.setAccessible(true);
             } catch (NoSuchFieldException ignored) {
             }
-            FIELDS.put(key, field);
         }
         return field;
     }
 
     public static Method findActionMethod(String name, Class clazz) {
         String key = clazz.getName() + "." + name;
-        Method method = ACTION_METHODS.get(key);
-        if (!ACTION_METHODS.containsKey(key)) {
+        F.Option<Method> method = ACTION_METHODS.get(key);
+        if (method == null) {
             while (clazz != null) {
                 for (Method m : clazz.getDeclaredMethods()) {
                     if (m.getName().equalsIgnoreCase(name) && Modifier.isPublic(m.getModifiers())) {
                         if (!m.isAnnotationPresent(Before.class) && !m.isAnnotationPresent(After.class) && !m.isAnnotationPresent(Finally.class)) {
-                            ACTION_METHODS.put(key, m);
+                            ACTION_METHODS.put(key, F.Option.Some(m));
                             return m;
                         }
                     }
                 }
                 clazz = clazz.getSuperclass();
             }
-            ACTION_METHODS.put(key, null);
+            ACTION_METHODS.put(key, method = F.None());
         }
-        return method;
+        return method.get();
     }
 
     public static synchronized void clean(Class clazz) {
@@ -94,9 +92,9 @@ public class ClassCache {
                 fit.remove();
             }
         }
-        Iterator<Map.Entry<String, Method>> amit = ACTION_METHODS.entrySet().iterator();
+        Iterator<Map.Entry<String, F.Option<Method>>> amit = ACTION_METHODS.entrySet().iterator();
         while (amit.hasNext()) {
-            Map.Entry<String, Method> entry = amit.next();
+            Map.Entry<String, F.Option<Method>> entry = amit.next();
             if (entry.getKey().startsWith(name)) {
                 amit.remove();
             }

@@ -10,6 +10,8 @@ import java.io.FileInputStream;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * .
@@ -39,12 +41,21 @@ final class ModuleLoader {
             }
         }
 
+        Pattern namePattern = Pattern.compile("(\\w+)-\\d+");
         File localModules = Play.getFile("modules");
         if (localModules.exists() && localModules.isDirectory()) {
             for (String name : localModules.list()) {
                 File module = new File(localModules, name);
                 if (module.isFile() && name.toLowerCase().endsWith(".zip")) {
-                    String moduleName = StringUtils.substringBefore(name, "-");
+                    name = StringUtils.substringBeforeLast(name, ".");
+                    Matcher matcher = namePattern.matcher(name);
+                    String moduleName;
+                    if (matcher.find()) {
+                        moduleName = matcher.group(1);
+                    } else {
+                        int index = name.lastIndexOf("-");
+                        moduleName = index > -1 ? name.substring(index + 1) : name;
+                    }
                     File to = new File(localModules, moduleName);
                     if (to.exists()) {
                         if (module.lastModified() <= to.lastModified()) {
@@ -60,7 +71,8 @@ final class ModuleLoader {
             }
             for (String name : localModules.list()) {
                 File module = new File(localModules, name);
-                String moduleName = StringUtils.substringBefore(name, "-");
+                int index = name.lastIndexOf("-");
+                String moduleName = index > -1 ? name.substring(index + 1) : name;
                 if (module.isDirectory()) {
                     addModule(props, moduleName, module);
                 } else if (!name.contains(".")) {

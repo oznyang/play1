@@ -11,7 +11,6 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProjectHelper;
 import org.codehaus.plexus.archiver.Archiver;
-import org.codehaus.plexus.archiver.manager.ArchiverManager;
 import org.codehaus.plexus.archiver.manager.NoSuchArchiverException;
 import org.codehaus.plexus.archiver.zip.ZipArchiver;
 
@@ -144,8 +143,12 @@ public class PlayDistMojo extends PlayPrecompileMojo {
 
         Set<String> excludeIds = new HashSet<String>();
         if (distExcludeArtifactIds != null) {
-            for (String s : StringUtils.split(distExcludeArtifactIds, ",")) {
-                excludeIds.add(s.trim());
+            for (String s : StringUtils.split(StringUtils.deleteWhitespace(distExcludeArtifactIds), ",")) {
+                excludeIds.add(s);
+                int i = s.lastIndexOf("/*");
+                if (i > -1) {
+                    excludeIds.add(s.substring(0, i));
+                }
             }
         }
 
@@ -207,14 +210,6 @@ public class PlayDistMojo extends PlayPrecompileMojo {
         zipArchiver.setDestFile(destFile);
         zipArchiver.createArchive();
         projectHelper.attachArtifact(project, "zip", distClassifier, destFile);
-    }
-
-    public static String cleanToBeTokenizedString(String str) {
-        String ret = "";
-        if (!StringUtils.isEmpty(str)) {
-            ret = str.trim().replaceAll("[\\s]*,[\\s]*", ",");
-        }
-        return ret;
     }
 
     private void sourcePackage() throws NoSuchArchiverException, IOException {

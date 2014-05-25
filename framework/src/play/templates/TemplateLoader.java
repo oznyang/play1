@@ -21,7 +21,7 @@ import play.exceptions.TemplateNotFoundException;
  */
 public class TemplateLoader {
 
-    protected static Map<String, BaseTemplate> templates = new HashMap<String, BaseTemplate>();
+    protected static Map<String, BaseTemplate> templates = new ConcurrentHashMap<String, BaseTemplate>();
     /**
      * See getUniqueNumberForTemplateFile() for more info
      */

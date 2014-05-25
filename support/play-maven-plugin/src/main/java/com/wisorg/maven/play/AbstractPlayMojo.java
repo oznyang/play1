@@ -175,7 +175,7 @@ public abstract class AbstractPlayMojo extends AbstractMojo {
                 int start = id.indexOf(':') + 1;
                 String parentId = id.substring(start, id.indexOf(':', start));
                 if (excludeIds.contains(parentId)) {
-                    return true;
+                    return !parentId.equals(artifact.getArtifactId()) || !excludeIds.contains(parentId + "/*");
                 }
             }
         }

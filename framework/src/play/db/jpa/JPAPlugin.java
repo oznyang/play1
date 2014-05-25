@@ -111,12 +111,8 @@ public class JPAPlugin extends PlayPlugin {
             Ejb3Configuration cfg = new Ejb3Configuration();
 
             List<Class> classes = new ArrayList<Class>(32);
-            String[] moreEntities = StringUtils.split(Play.configuration.getProperty("jpa.entities", ""), ",");
+            String[] moreEntities = StringUtils.split(StringUtils.deleteWhitespace(Play.configuration.getProperty("jpa.entities", "")), ",");
             for (String entity : moreEntities) {
-                entity = StringUtils.trim(entity);
-                if ("".equals(entity)) {
-                    continue;
-                }
                 try {
                     classes.add(Play.classloader.loadClass(entity));
                 } catch (Exception e) {

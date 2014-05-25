@@ -436,7 +436,7 @@ public class ApplicationClassloader extends ClassLoader {
             if (Play.usePrecompiled) {
 
                 for(ApplicationClass applicationClass:Play.classes.all()){
-                    allClasses.add(applicationClass.javaClass);
+                    allClasses.add(loadPrecompiledClass(applicationClass));
                 }
 /*
                 List<ApplicationClass> applicationClasses = new ArrayList<ApplicationClass>();

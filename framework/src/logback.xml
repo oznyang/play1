@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <charset>utf-8</charset>
+            <pattern>%d{mm:ss} |-[%-4level] [%thread] %logger{50}:%L - %msg%n%rEx</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="play" level="info"/>
+    <logger name="org.quartz" level="warn"/>
+    <logger name="org.hibernate" level="warn"/>
+    <logger name="DataNucleus" level="warn"/>
+    <logger name="org.apache.commons.httpclient" level="error"/>
+    <logger name="sf.oval.internal" level="error"/>
+    <logger name="org.springframework" level="warn"/>
+
+    <root level="info">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

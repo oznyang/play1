@@ -235,10 +235,19 @@ public abstract class Cache {
             } catch (Exception e) {
                 Logger.error(e, "Error while connecting to memcached");
                 Logger.warn("Fallback to local cache");
-                cacheImpl = EhCacheImpl.newInstance();
+                initEhCache();
             }
         } else {
+            initEhCache();
+        }
+    }
+
+    private static void initEhCache(){
+        try {
+            Class.forName("net.sf.ehcache.Element");
             cacheImpl = EhCacheImpl.newInstance();
+        } catch (ClassNotFoundException e) {
+            Logger.debug("Ehcache not found");
         }
     }
 

@@ -150,7 +150,7 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
         }
     }
 
-    private static final Map<String, RenderStatic> staticPathsCache = new HashMap<String, RenderStatic>();
+    private static final Map<String, RenderStatic> staticPathsCache = new ConcurrentHashMap<String, RenderStatic>();
 
     public class NettyInvocation extends Invoker.Invocation {
 
@@ -182,10 +182,7 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
                     Router.detectChanges(Play.ctxPath);
                 }
                 if (Play.mode == Play.Mode.PROD && staticPathsCache.containsKey(request.domain + " " + request.method + " " + request.path)) {
-                    RenderStatic rs = null;
-                    synchronized (staticPathsCache) {
-                        rs = staticPathsCache.get(request.domain + " " + request.method + " " + request.path);
-                    }
+                    RenderStatic rs = staticPathsCache.get(request.domain + " " + request.method + " " + request.path);
                     serveStatic(rs, ctx, request, response, nettyRequest, event);
                     if (Logger.isTraceEnabled()) {
                         Logger.trace("init: end false");
@@ -202,9 +199,7 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
                 return false;
             } catch (RenderStatic rs) {
                 if (Play.mode == Play.Mode.PROD) {
-                    synchronized (staticPathsCache) {
-                        staticPathsCache.put(request.domain + " " + request.method + " " + request.path, rs);
-                    }
+                    staticPathsCache.put(request.domain + " " + request.method + " " + request.path, rs);
                 }
                 serveStatic(rs, ctx, request, response, nettyRequest, this.event);
                 if (Logger.isTraceEnabled()) {

@@ -8,14 +8,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.Channel;
 import java.security.AccessControlException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import play.Play;
 import play.exceptions.UnexpectedException;
 import play.libs.IO;
@@ -41,30 +41,36 @@ public class VirtualFile {
 
     public String relativePath() {
         String path = realFile.getAbsolutePath();
-        String relPath;
+        String relPath = RELATIVE_CACHE.get(path);
+        if (relPath != null) {
+            return relPath;
+        }
         for (int i = 1, len = Play.roots.size(); i < len; i++) {
             VirtualFile vf = Play.roots.get(i);
             relPath = getRelPath(vf.getRealFile(), path);
             if (relPath != null) {
-                return "{module:" + vf.getName() + "}" + relPath;
+                relPath = "{module:" + vf.getName() + "}" + relPath;
+                break;
             }
         }
-        relPath = getRelPath(Play.applicationPath, path);
-        if (relPath != null) {
-            return relPath;
+        if (relPath == null) {
+            relPath = getRelPath(Play.applicationPath, path);
         }
-        relPath = getRelPath(Play.frameworkPath, path);
-        if (relPath != null) {
-            return "{play}" + relPath;
+        if (relPath == null) {
+            relPath = getRelPath(Play.frameworkPath, path);
         }
-        return "{?}" + path;
+        if (relPath == null) {
+            relPath = "{?}" + path;
+        }
+        RELATIVE_CACHE.put(path, relPath);
+        return relPath;
     }
 
     private String getRelPath(File file, String subFile) {
         String path = file.getAbsolutePath() + File.separator;
         int pos = subFile.indexOf(path);
         if (pos > -1) {
-            return subFile.substring(path.length() - 1);
+            return StringUtils.replace(subFile.substring(path.length() - 1), "\\", "/");
         }
         return null;
     }
@@ -202,9 +208,14 @@ public class VirtualFile {
     }
 
     public static VirtualFile search(Collection<VirtualFile> roots, String path) {
+        String absFile = ABSOLUTE_CACHE.get(path);
+        if (absFile != null) {
+            return VirtualFile.open(absFile);
+        }
         for (VirtualFile file : roots) {
             VirtualFile child = file.child(path);
             if (child.exists()) {
+                ABSOLUTE_CACHE.put(path, child.getAbsolutePath());
                 return child;
             }
         }
@@ -226,14 +237,27 @@ public class VirtualFile {
                 }
                 if(module.startsWith("module:")){
                     module = module.substring("module:".length());
-                    for(Entry<String, VirtualFile> entry : Play.modules.entrySet()) {
-                        if(entry.getKey().equals(module))
-                            return entry.getValue().child(path);
+                    VirtualFile vf = Play.modules.get(module);
+                    if (vf != null) {
+                        return vf.child(path);
                     }
                 }
             }
         }
 
         return null;
+    }
+
+    private static final Map<String, String> RELATIVE_CACHE = new ConcurrentHashMap<String, String>();
+    private static final Map<String, String> ABSOLUTE_CACHE = new ConcurrentHashMap<String, String>();
+
+    private static String put(Map<String, String> map, String key, String value) {
+        map.put(key, value);
+        return value;
+    }
+
+    public static void cleanCache(){
+        RELATIVE_CACHE.clear();
+        ABSOLUTE_CACHE.clear();
     }
 }
