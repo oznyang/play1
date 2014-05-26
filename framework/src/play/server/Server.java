@@ -157,6 +157,14 @@ public class Server {
         if (System.getProperty("writepid", "false").equals("true")) {
             writePID(root);
         }
+
+        for (String arg : args) {
+            int index = arg.indexOf('=');
+            if (index > 0) {
+                System.setProperty(arg.substring(0, index), arg.substring(index + 1));
+            }
+        }
+
         Play.init(root, System.getProperty("play.id", ""));
         if (System.getProperty("precompile") == null) {
             new Server(args);

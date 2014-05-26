@@ -12,6 +12,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang.StringUtils;
 import play.cache.Cache;
 import play.classloading.ApplicationClasses;
 import play.classloading.ApplicationClassloader;
@@ -192,6 +194,7 @@ public class Play {
         // Simple things
         Play.id = id;
         Play.started = false;
+        root = new File(FilenameUtils.normalize(root.getAbsolutePath()));
         Play.applicationPath = root;
 
         // load all play.static of exists
@@ -220,6 +223,8 @@ public class Play {
             mode = Mode.PROD;
         }
 
+        System.setProperty("play.version", Play.version);
+        System.setProperty("application.path", Play.applicationPath.getAbsolutePath());
         System.setProperty("play.appName", configuration.getProperty("application.name", ""));
         if (mode.isProd() && System.getProperty("precompile") == null) {
             System.setProperty("play.prod", "true");
@@ -766,7 +771,7 @@ public class Play {
 					moduleName = moduleName.substring(0, moduleName.indexOf("-"));
 				}
 				
-				if(module == null || !module.exists()){
+				if(!module.exists()){
 				        Logger.error("Module %s will not be loaded because %s does not exist", moduleName, module.getAbsolutePath());
 				} else if (module.isDirectory()) {
 					addModule(moduleName, module);
@@ -810,7 +815,7 @@ public class Play {
         }
         roots.add(root);
         if (!name.startsWith("_")) {
-            Logger.info("Module %s is available (%s)", name, path.getAbsolutePath());
+            Logger.info("Module added %s = [%s]", StringUtils.rightPad(name, 10), path.getAbsolutePath());
         }
     }
 

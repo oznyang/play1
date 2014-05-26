@@ -125,6 +125,10 @@ public class Logger {
             }
         }
 
+        if (System.getProperty("play.log.path") == null) {
+            System.setProperty("play.log.path", Play.applicationPath.getAbsolutePath());
+        }
+
         java.util.logging.Logger rootLogger = java.util.logging.Logger.getLogger("");
         for (Handler handler : rootLogger.getHandlers()) {
             rootLogger.removeHandler(handler);

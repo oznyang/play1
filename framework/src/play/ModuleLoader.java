@@ -82,9 +82,6 @@ final class ModuleLoader {
             }
         }
 
-        System.setProperty("play.version", Play.version);
-        System.setProperty("application.path", Play.applicationPath.getAbsolutePath());
-
         // Auto add special modules
         if (Play.runingInTestMode()) {
             addModule(props, "_testrunner", new File(Play.frameworkPath, "modules/testrunner"));
