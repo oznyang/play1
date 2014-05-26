@@ -57,6 +57,12 @@ public abstract class AbstractPlayServerMojo extends AbstractPlayMojo {
     @Parameter(property = "play.runWithTests", defaultValue = "false")
     private boolean runWithTests;
 
+    /**
+     * Before precompile clean the target directory.
+     */
+    @Parameter(property = "play.precompileClean", defaultValue = "false")
+    private boolean precompileClean;
+
     public String getJvmArgs() {
         return jvmArgs;
     }
@@ -167,6 +173,9 @@ public abstract class AbstractPlayServerMojo extends AbstractPlayMojo {
     }
 
     protected void precompile() throws MojoExecutionException, MojoFailureException, IOException {
+        if (precompileClean) {
+            deleteDirectory(new File(project.getBasedir(), "precompiled"));
+        }
         File baseDir = project.getBasedir();
         String playId = getPlayId();
         Properties props;

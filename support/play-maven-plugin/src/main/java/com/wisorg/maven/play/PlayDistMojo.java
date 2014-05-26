@@ -1,8 +1,10 @@
 package com.wisorg.maven.play;
 
 import com.google.common.collect.Sets;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
@@ -17,10 +19,11 @@ import org.codehaus.plexus.archiver.zip.ZipArchiver;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
- * Package Play server or module as one zip achive.
+ * Package play server or module as one zip achive.
  * <p/>
  *
  * @author <a href="mailto:oznyang@163.com">oznyang</a>
@@ -34,31 +37,32 @@ public class PlayDistMojo extends PlayPrecompileMojo {
      * Distribution application resources include filter
      */
     @Parameter(property = "play.distIncludes", defaultValue = "precompiled/,conf/,public/,documentation/,bin/")
-    private String distIncludes;
+    protected String distIncludes;
 
     /**
      * Distribution application resources exclude filter.
      */
-    @Parameter(property = "play.distExcludes", defaultValue = "")
-    private String distExcludes;
+    @Parameter(property = "play.distExcludes", defaultValue = "**/.*")
+    protected String distExcludes;
 
     /**
      * Distribution application source exclude filter
      */
-    @Parameter(property = "play.distSourceExcludes", defaultValue = "**/*.java,**/*.html")
-    private String distSourceExcludes;
+    @Parameter(property = "play.distSourceExcludes", defaultValue = "**/*.java,**/*.html,**/.*")
+    protected String distSourceExcludes;
 
     /**
      * Distribution additional directories.
      */
     @Parameter(property = "play.distAdditionalDirectories")
-    private File[] distAdditionalDirectories;
+    protected List<Resource> distAdditionalDirectories;
+
 
     /**
      * Distribution dependency artifactId exclude filter.
      */
     @Parameter(property = "play.distExcludeArtifactIds", defaultValue = "")
-    private String distExcludeArtifactIds;
+    protected String distExcludeArtifactIds;
 
     /**
      * The directory for the generated distribution file.
@@ -135,8 +139,9 @@ public class PlayDistMojo extends PlayPrecompileMojo {
         }
         zipArchiver.addDirectory(new File(baseDir, "app"), "app/", null, sourceExcludes);
         if (distAdditionalDirectories != null) {
-            for (File dir : distAdditionalDirectories) {
-                zipArchiver.addDirectory(dir);
+            for (Resource resource : distAdditionalDirectories) {
+                File dir = new File(resource.getDirectory());
+                zipArchiver.addDirectory(dir, resource.getTargetPath(), getArray(resource.getExcludes()), getArray(resource.getExcludes()));
                 getLog().debug("Add Dist dir: " + dir.getAbsolutePath());
             }
         }
@@ -200,8 +205,9 @@ public class PlayDistMojo extends PlayPrecompileMojo {
         }
         zipArchiver.addDirectory(new File(baseDir, "app"), "app/", null, sourceExcludes);
         if (distAdditionalDirectories != null) {
-            for (File dir : distAdditionalDirectories) {
-                zipArchiver.addDirectory(dir);
+            for (Resource resource : distAdditionalDirectories) {
+                File dir = new File(resource.getDirectory());
+                zipArchiver.addDirectory(dir, resource.getTargetPath(), getArray(resource.getExcludes()), getArray(resource.getExcludes()));
                 getLog().debug("Add Dist dir: " + dir.getAbsolutePath());
             }
         }
@@ -241,5 +247,12 @@ public class PlayDistMojo extends PlayPrecompileMojo {
         }
         sb.append(".zip");
         return sb.toString();
+    }
+
+    private String[] getArray(List<String> list) {
+        if (list == null || list.isEmpty()) {
+            return ArrayUtils.EMPTY_STRING_ARRAY;
+        }
+        return list.toArray(new String[list.size()]);
     }
 }

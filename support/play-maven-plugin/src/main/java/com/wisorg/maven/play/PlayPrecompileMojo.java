@@ -19,17 +19,8 @@ import java.io.IOException;
 @Mojo(name = "precompile", requiresDependencyResolution = ResolutionScope.TEST)
 public class PlayPrecompileMojo extends AbstractPlayServerMojo {
 
-    /**
-     * Before precompile clean the target directory.
-     */
-    @Parameter(property = "play.precompileClean", defaultValue = "false")
-    private boolean precompileClean;
-
     @Override
     protected void internalExecute() throws MojoExecutionException, MojoFailureException, IOException {
-        if (precompileClean) {
-            deleteDirectory(new File(project.getBasedir(), "precompiled"));
-        }
         precompile();
     }
 }
