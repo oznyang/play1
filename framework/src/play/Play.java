@@ -847,8 +847,8 @@ public class Play {
      * is 'test' or 'test-?.*'
      * @return true if testmode
      */
-    public static boolean runingInTestMode(){
-        return id.matches("test|test-?.*");
+    public static boolean runingInTestMode() {
+        return System.getProperty("play.test") != null || id.matches("test|test-?.*");
     }
     
 

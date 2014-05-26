@@ -27,13 +27,13 @@ public class PlayRunMojo extends AbstractPlayServerMojo {
     /**
      * Play server http port.
      */
-    @Parameter(property = "play.httpPort", defaultValue = "")
+    @Parameter(property = "play.httpPort")
     private String httpPort;
 
     /**
      * Play server https port.
      */
-    @Parameter(property = "play.httpsPort", defaultValue = "")
+    @Parameter(property = "play.httpsPort")
     private String httpsPort;
 
     /**
@@ -45,7 +45,7 @@ public class PlayRunMojo extends AbstractPlayServerMojo {
     /**
      * Play application run mode.
      */
-    @Parameter(property = "play.mode", defaultValue = "")
+    @Parameter(property = "play.mode")
     private String appMode;
 
     /**
@@ -187,6 +187,9 @@ public class PlayRunMojo extends AbstractPlayServerMojo {
         addSystemProperty(javaTask, "play.path", getPlayHome().getAbsolutePath());
         addSystemProperty(javaTask, "play.tmp", getPlayHomeDir("tmp").getAbsolutePath());
         addSystemProperty(javaTask, "play.id", getPlayId());
+        if (isPlayTest()) {
+            addSystemProperty(javaTask, "play.test", "true");
+        }
         addSystemProperty(javaTask, "application.path", baseDir.getAbsolutePath());
 
         getLog().debug("Full cmdLine: " + javaTask.getCommandLine() + "\n");

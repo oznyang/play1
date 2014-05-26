@@ -11,6 +11,10 @@ public class TestRunnerPlugin extends PlayPlugin {
 
     @Override
     public void onLoad() {
+        if (!Play.runingInTestMode()) {
+            Play.pluginCollection.disablePlugin(TestRunnerPlugin.class);
+            return;
+        }
         VirtualFile appRoot = VirtualFile.open(Play.applicationPath);
         Play.javaPath.add(appRoot.child("test"));
         for (VirtualFile module : Play.modules.values()) {

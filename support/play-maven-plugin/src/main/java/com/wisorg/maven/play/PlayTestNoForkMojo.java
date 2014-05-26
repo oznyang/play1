@@ -13,7 +13,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 @Mojo(name = "test-no-fork", requiresDependencyResolution = ResolutionScope.TEST)
 public class PlayTestNoForkMojo extends PlayRunMojo {
     @Override
-    public boolean isRunWithTests() {
+    public boolean isPlayTest() {
         return true;
     }
 

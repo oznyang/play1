@@ -13,7 +13,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 @Mojo(name = "test", requiresDependencyResolution = ResolutionScope.TEST)
 public class PlayTestMojo extends PlayRunMojo {
     @Override
-    public boolean isRunWithTests() {
+    public boolean isPlayTest() {
         return true;
     }
 }

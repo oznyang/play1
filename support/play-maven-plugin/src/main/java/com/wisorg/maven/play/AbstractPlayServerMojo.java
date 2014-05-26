@@ -36,26 +36,20 @@ public abstract class AbstractPlayServerMojo extends AbstractPlayMojo {
     /**
      * When in fork mode, enable jvm debug.
      */
-    @Parameter(property = "play.debugPort", defaultValue = "")
+    @Parameter(property = "play.debugPort")
     protected String debugPort;
 
     /**
      * Play id (profile) used when starting server without tests.
      */
-    @Parameter(property = "play.id", defaultValue = "")
+    @Parameter(property = "play.id")
     private String playId;
-
-    /**
-     * Play id (profile) used when running server with tests.
-     */
-    @Parameter(property = "play.testId", defaultValue = "test")
-    private String playTestId;
 
     /**
      * Run server with test profile.
      */
-    @Parameter(property = "play.runWithTests", defaultValue = "false")
-    private boolean runWithTests;
+    @Parameter(property = "play.test", defaultValue = "false")
+    private boolean playTest;
 
     /**
      * Before precompile clean the target directory.
@@ -68,11 +62,11 @@ public abstract class AbstractPlayServerMojo extends AbstractPlayMojo {
     }
 
     public String getPlayId() {
-        return StringUtils.defaultString(isRunWithTests() ? playTestId : playId);
+        return StringUtils.defaultString(playId);
     }
 
-    public boolean isRunWithTests() {
-        return runWithTests;
+    public boolean isPlayTest() {
+        return playTest;
     }
 
     protected Properties getConfiguration(String playId) throws IOException {
@@ -152,11 +146,15 @@ public abstract class AbstractPlayServerMojo extends AbstractPlayMojo {
 
     protected void addJvmArgs(Java javaTask, String jvmMemory, String jvmArgs) {
         boolean memoryInProps = false;
+        boolean permInProps = false;
         if (StringUtils.isNotBlank(jvmMemory)) {
             String[] args = StringUtils.split(jvmMemory.trim(), " ");
             for (String arg : args) {
                 if (arg.startsWith("-Xm")) {
                     memoryInProps = true;
+                }
+                if (arg.contains("PermSize")) {
+                    permInProps = true;
                 }
                 addJvmArgs(javaTask, arg);
             }
@@ -165,6 +163,9 @@ public abstract class AbstractPlayServerMojo extends AbstractPlayMojo {
             String[] args = StringUtils.split(jvmArgs.trim(), " ");
             for (String arg : args) {
                 if (memoryInProps && arg.startsWith("-Xm")) {
+                    continue;
+                }
+                if (permInProps && arg.contains("PermSize")) {
                     continue;
                 }
                 addJvmArgs(javaTask, arg);
@@ -177,7 +178,6 @@ public abstract class AbstractPlayServerMojo extends AbstractPlayMojo {
             deleteDirectory(new File(project.getBasedir(), "precompiled"));
         }
         File baseDir = project.getBasedir();
-        String playId = getPlayId();
         Properties props;
         try {
             props = getConfiguration(playId);
@@ -200,7 +200,7 @@ public abstract class AbstractPlayServerMojo extends AbstractPlayMojo {
             javaTask.createJvmarg().setValue("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=" + debugPort);
         }
         addSystemProperty(javaTask, "play.path", getPlayHome().getAbsolutePath());
-        addSystemProperty(javaTask, "play.id", playId);
+        addSystemProperty(javaTask, "play.id", getPlayId());
         addSystemProperty(javaTask, "play.tmp", getPlayHomeDir("tmp").getAbsolutePath());
         addSystemProperty(javaTask, "application.path", baseDir.getAbsolutePath());
         addSystemProperty(javaTask, "precompile", "yes");

@@ -10,10 +10,7 @@ import play.templates.TemplateLoader;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Marek Piechut
@@ -82,6 +79,9 @@ public class DocumentationGenerator {
 
     public List<Map<String, String>> listSections() {
         File[] textileFiles = projectDocsPath.listFiles((FilenameFilter) new SuffixFileFilter(".textile"));
+        if (textileFiles == null) {
+            return Collections.emptyList();
+        }
         List<Map<String, String>> sections = new ArrayList<Map<String, String>>(textileFiles.length);
 
         for (File textileFile : textileFiles) {
