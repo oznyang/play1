@@ -221,7 +221,7 @@ public class Play {
         }
 
         System.setProperty("play.appName", configuration.getProperty("application.name", ""));
-        if (mode.isProd()) {
+        if (mode.isProd() && System.getProperty("precompile") == null) {
             System.setProperty("play.prod", "true");
         }
 
@@ -233,7 +233,6 @@ public class Play {
         if( !Logger.configuredManually) {
             Logger.setUp(logLevel);
         }
-        Logger.recordCaller = Boolean.parseBoolean(configuration.getProperty("application.log.recordCaller", "false"));
 
         Logger.info("Starting %s", root.getAbsolutePath());
 
@@ -519,7 +518,6 @@ public class Play {
             if( !Logger.configuredManually) {
                 Logger.setUp(logLevel);
             }
-            Logger.recordCaller = Boolean.parseBoolean(configuration.getProperty("application.log.recordCaller", "false"));
 
             // Locales
             langs = new ArrayList<String>(Arrays.asList(configuration.getProperty("application.langs", "").split(",")));

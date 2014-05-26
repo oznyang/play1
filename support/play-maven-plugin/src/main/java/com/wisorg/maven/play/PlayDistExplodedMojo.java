@@ -49,6 +49,8 @@ public class PlayDistExplodedMojo extends PlayDistMojo {
             }
         }
 
+        FileUtils.copyDirectoryStructure(getPlayHomeDir("resources"), new File(distExplodedDirectory, "resources"));
+
         Set<String> excludeIds = new HashSet<String>();
         if (distExcludeArtifactIds != null) {
             for (String s : StringUtils.split(StringUtils.deleteWhitespace(distExcludeArtifactIds), ",")) {

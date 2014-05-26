@@ -55,9 +55,15 @@ public class Logger {
      * Try to init stuff.
      */
     public static void init() {
-        if(initLogback()){
+        String recordCallerString = Play.configuration.getProperty("application.log.recordCaller");
+        if (initLogback()) {
+            recordCaller = recordCallerString == null || Boolean.parseBoolean(recordCallerString);
             return;
         }
+        if (recordCallerString != null) {
+            recordCaller = Boolean.parseBoolean(recordCallerString);
+        }
+
         String log4jPath = Play.configuration.getProperty("application.log.path", "/log4j.xml");
         URL log4jConf = Logger.class.getResource(log4jPath);
         boolean isXMLConfig = log4jPath.endsWith(".xml");

@@ -9,6 +9,7 @@ import play.vfs.VirtualFile;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * .
@@ -110,13 +111,22 @@ public final class PrecompiledLoader {
         return 0;
     }
 
+    private static Pattern TEMPLATE_PATTERN = Pattern.compile("\\{(.*)\\}");
+
+    public static String getPrecompiledTemplateName(String name) {
+        return "precompiled/templates/" + StringUtils.replace(TEMPLATE_PATTERN.matcher(name).replaceAll("from_$1"), ":", "_");
+    }
+
     public static BaseTemplate loadTemplate(VirtualFile file) {
         String path = file.getRealFile().getAbsolutePath();
         for (VirtualFile vf : Play.roots) {
             String rootPath = vf.getRealFile().getAbsolutePath();
-            if (path.contains(rootPath)) {
+            if (path.startsWith(rootPath)) {
                 String relativePath = StringUtils.replace(path.substring(rootPath.length()), ":", "_");
-                File precompiledFile = new File(vf.getRealFile(), "precompiled/templates/" + relativePath);
+                File precompiledFile = new File(vf.getRealFile(), "precompiled/templates" + relativePath);
+                if (!precompiledFile.exists()) {
+                    precompiledFile = new File(vf.getRealFile(), getPrecompiledTemplateName(file.relativePath()));
+                }
                 if (precompiledFile.exists() && precompiledFile.lastModified() >= file.lastModified()) {
                     BaseTemplate template = new GroovyTemplate(relativePath, file.exists() ? file.contentAsString() : "");
                     template.loadPrecompiled(precompiledFile);

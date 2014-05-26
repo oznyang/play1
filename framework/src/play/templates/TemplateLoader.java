@@ -77,13 +77,13 @@ public class TemplateLoader {
                 return template;
             }
             if (Play.usePrecompiled) {
-                template = new GroovyTemplate(relativePath.replaceAll("\\{(.*)\\}", "from_$1").replace(":", "_").replace("..", "parent"), file);
+                template = new GroovyTemplate(PrecompiledLoader.getPrecompiledTemplateName(relativePath), file);
                 try {
                     template.loadPrecompiled();
                     templates.put(key, template);
                     return template;
                 } catch(Exception e) {
-                    Logger.warn("Precompiled template %s not found, trying to load it dynamically...", relativePath);
+                    Logger.debug("Precompiled template %s not found, trying to load it dynamically...", relativePath);
                 }
             }
             template = new GroovyTemplate(relativePath, file);

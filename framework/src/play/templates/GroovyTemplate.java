@@ -30,6 +30,7 @@ import org.codehaus.groovy.tools.GroovyClass;
 import play.Logger;
 import play.Play;
 import play.Play.Mode;
+import play.PrecompiledLoader;
 import play.classloading.BytecodeCache;
 import play.classloading.enhancers.LocalvariablesNamesEnhancer.LocalVariablesNamesTracer;
 import play.data.binding.Unbinder;
@@ -164,8 +165,11 @@ public class GroovyTemplate extends BaseTemplate {
                 //if (System.getProperty("precompile") != null) {
                     try {
                         // emit bytecode to standard class layout as well
-                        File f = Play.getFile("precompiled/templates/" + name.replaceAll("\\{(.*)\\}", "from_$1").replace(":", "_").replace("..", "parent"));
-                        f.getParentFile().mkdirs();
+                        File f = Play.getFile(PrecompiledLoader.getPrecompiledTemplateName(name));
+                        File parent = f.getParentFile();
+                        if (!parent.exists()) {
+                            parent.mkdirs();
+                        }
                         FileOutputStream fos = new FileOutputStream(f);
                         fos.write(sb.toString().getBytes("utf-8"));
                         fos.close();

@@ -146,6 +146,8 @@ public class PlayDistMojo extends PlayPrecompileMojo {
             }
         }
 
+        zipArchiver.addDirectory(getPlayHomeDir("resources"), "resources/", null, null);
+
         Set<String> excludeIds = new HashSet<String>();
         if (distExcludeArtifactIds != null) {
             for (String s : StringUtils.split(StringUtils.deleteWhitespace(distExcludeArtifactIds), ",")) {
