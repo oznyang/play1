@@ -17,7 +17,7 @@ then
     git checkout play-${rv}
     mvn deploy
     git checkout scc
-    mvn release:clean
+    git clean -dfx
 else
     echo "release.sh [releaseVersion] [developmentVersion]"
 fi
