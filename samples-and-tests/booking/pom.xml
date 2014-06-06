@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.wisorg.playframework</groupId>
         <artifactId>play-parent</artifactId>
-        <version>1.3.0-SNAPSHOT</version>
+        <version>1.3.1-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -24,46 +24,46 @@
             <artifactId>play</artifactId>
             <classifier>resource</classifier>
             <type>zip</type>
-            <version>1.3.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.wisorg.playframework</groupId>
             <artifactId>play-documentation</artifactId>
             <classifier>resource</classifier>
-            <version>1.3.0-SNAPSHOT</version>
+            <version>${project.version}</version>
             <type>zip</type>
         </dependency>
 
         <dependency>
             <groupId>com.wisorg.playframework</groupId>
             <artifactId>docviewer</artifactId>
-            <version>1.3.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.wisorg.playframework</groupId>
             <artifactId>docviewer</artifactId>
-            <version>1.3.0-SNAPSHOT</version>
+            <version>${project.version}</version>
             <type>zip</type>
         </dependency>
         <dependency>
             <groupId>com.wisorg.playframework</groupId>
             <artifactId>testrunner</artifactId>
-            <version>1.3.0-SNAPSHOT</version>
+            <version>${project.version}</version>
             <type>zip</type>
         </dependency>
 
         <dependency>
             <groupId>com.wisorg.playframework</groupId>
             <artifactId>testrunner</artifactId>
-            <version>1.3.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.wisorg.playframework</groupId>
             <artifactId>console</artifactId>
-            <version>1.3.0-SNAPSHOT</version>
+            <version>${project.version}</version>
             <type>zip</type>
         </dependency>
     </dependencies>

@@ -35,6 +35,13 @@ public class Server {
             httpPort = 9000;
         }
 
+        if (httpPort != -1) {
+            p.put("http.port", httpPort);
+        }
+        if (httpsPort != -1) {
+            p.put("https.port", httpsPort);
+        }
+
         if (httpPort == httpsPort) {
             Logger.error("Could not bind on https and http on the same port " + httpPort);
             Play.fatalServerErrorOccurred();

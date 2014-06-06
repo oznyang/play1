@@ -9,7 +9,6 @@
     <description>Play Framework Parent</description>
 
     <properties>
-        <hibernate.version>4.2.13.Final</hibernate.version>
         <slf4j.version>1.7.7</slf4j.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.repository.host>http://dev.wisorg.com/nexus/content</project.repository.host>
@@ -326,7 +325,7 @@
             <dependency>
                 <groupId>org.hibernate</groupId>
                 <artifactId>hibernate-core</artifactId>
-                <version>${hibernate.version}-patched-play</version>
+                <version>4.2.13.1.Final-patched-play</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.jboss.spec.javax.transaction</groupId>
@@ -337,7 +336,7 @@
             <dependency>
                 <groupId>org.hibernate</groupId>
                 <artifactId>hibernate-entitymanager</artifactId>
-                <version>${hibernate.version}</version>
+                <version>4.2.13.Final</version>
                 <exclusions>
                     <exclusion>
                         <groupId>cglib</groupId>
