@@ -103,8 +103,7 @@ public final class PrecompiledLoader {
 
     public static long getTemplateLastModified(VirtualFile vf) {
         String name = StringUtils.substringAfter(Play.applicationPath.getAbsolutePath(), vf.getRealFile().getAbsolutePath());
-        name = StringUtils.replace(name, ":", "_");
-        File file = Play.getFile("precompiled/templates/" + name);
+        File file = Play.getFile("precompiled/templates/" + StringUtils.replace(name, ":", "_"));
         if (file.exists()) {
             return file.lastModified();
         }
@@ -150,6 +149,13 @@ public final class PrecompiledLoader {
                 template.loadPrecompiled(precompiledFile);
                 return template;
             }
+        }
+
+        File precompiledFile = new File(Play.applicationPath, "precompiled/templates/from_play/framework/templates/" + path);
+        if (precompiledFile.exists()) {
+            BaseTemplate template = new GroovyTemplate(path, "");
+            template.loadPrecompiled(precompiledFile);
+            return template;
         }
         return null;
     }

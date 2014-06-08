@@ -21,6 +21,8 @@ import play.exceptions.TemplateNotFoundException;
  */
 public class TemplateLoader {
 
+    private static BaseTemplate NULL = new GroovyTemplate("NULL", "");
+
     protected static Map<String, BaseTemplate> templates = new ConcurrentHashMap<String, BaseTemplate>();
     /**
      * See getUniqueNumberForTemplateFile() for more info
@@ -170,7 +172,9 @@ public class TemplateLoader {
      */
     public static Template load(String path) {
         BaseTemplate template = templates.get(path);
-        if (template == null || template.compiledTemplate == null) {
+        if (Play.usePrecompiled && template == NULL) {
+            throw new TemplateNotFoundException(path);
+        } else if (template == null || template.compiledTemplate == null) {
             template = PrecompiledLoader.loadTemplate(path);
             if (template != null) {
                 templates.put(path, template);
@@ -197,6 +201,9 @@ public class TemplateLoader {
             template = (BaseTemplate) TemplateLoader.load(tf);
             templates.put(path, template);
             return template;
+        }
+        if (Play.usePrecompiled) {
+            templates.put(path, NULL);
         }
         throw new TemplateNotFoundException(path);
     }

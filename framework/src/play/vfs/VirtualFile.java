@@ -53,10 +53,10 @@ public class VirtualFile {
                 break;
             }
         }
-        if (relPath == null) {
+        if (relPath == null && !Play.frameworkPath.equals(Play.applicationPath)) {
             String tmpPath = getRelPath(Play.frameworkPath, path);
             if (tmpPath != null) {
-                relPath = "{play}" + getRelPath(Play.frameworkPath, path);
+                relPath = "{play}" + tmpPath;
             }
         }
         if (relPath == null) {
