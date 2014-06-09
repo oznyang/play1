@@ -122,12 +122,12 @@ public final class PrecompiledLoader {
             String rootPath = vf.getRealFile().getAbsolutePath();
             if (path.startsWith(rootPath)) {
                 String relativePath = StringUtils.replace(path.substring(rootPath.length()), ":", "_");
-                File precompiledFile = new File(vf.getRealFile(), "precompiled/templates" + relativePath);
+                File precompiledFile = new File(Play.applicationPath, getPrecompiledTemplateName(file.relativePath()));
                 if (!precompiledFile.exists()) {
-                    precompiledFile = new File(vf.getRealFile(), getPrecompiledTemplateName(file.relativePath()));
+                    precompiledFile = new File(vf.getRealFile(), "precompiled/templates" + relativePath);
                 }
                 if (precompiledFile.exists() && precompiledFile.lastModified() >= file.lastModified()) {
-                    BaseTemplate template = new GroovyTemplate(relativePath, file.exists() ? file.contentAsString() : "");
+                    BaseTemplate template = file.exists() ? new GroovyTemplate(path, file) : new GroovyTemplate(path, "");
                     template.loadPrecompiled(precompiledFile);
                     return template;
                 }
@@ -141,11 +141,11 @@ public final class PrecompiledLoader {
         for (VirtualFile vf : Play.roots) {
             File precompiledFile = new File(vf.getRealFile(), "precompiled/templates/app/views/" + path);
             if (precompiledFile.exists()) {
-                File sourceFile = new File(vf.getRealFile(), path);
+                File sourceFile = new File(vf.getRealFile(), "app/views/" + path);
                 if (sourceFile.exists() && sourceFile.lastModified() > precompiledFile.lastModified()) {
                     return null;
                 }
-                BaseTemplate template = new GroovyTemplate(path, sourceFile.exists() ? VirtualFile.open(sourceFile).contentAsString() : "");
+                BaseTemplate template = sourceFile.exists() ? new GroovyTemplate(path, VirtualFile.open(sourceFile)) : new GroovyTemplate(path, "");
                 template.loadPrecompiled(precompiledFile);
                 return template;
             }
