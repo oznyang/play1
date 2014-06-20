@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.wisorg.playframework</groupId>
         <artifactId>play-parent</artifactId>
-        <version>1.3.2-SNAPSHOT-SNAPSHOT</version>
+        <version>1.3.2-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -27,7 +27,7 @@
         <dependency>
             <groupId>com.wisorg.playframework</groupId>
             <artifactId>secure</artifactId>
-            <version>1.3.2-SNAPSHOT-SNAPSHOT</version>
+            <version>1.3.2-SNAPSHOT</version>
             <type>zip</type>
         </dependency>
     </dependencies>
