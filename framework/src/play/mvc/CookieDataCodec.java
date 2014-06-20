@@ -1,5 +1,7 @@
 package play.mvc;
 
+import org.apache.commons.lang.StringUtils;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -15,7 +17,7 @@ public class CookieDataCodec {
      * @throws UnsupportedEncodingException
      */
     public static void decode(Map<String, String> map, String data) throws UnsupportedEncodingException {
-        String[] keyValues = data.split("&");
+        String[] keyValues = StringUtils.split(data, '&');
         for (String keyValue : keyValues) {
             String[] splitted = keyValue.split("=", 2);
             if (splitted.length == 2) {

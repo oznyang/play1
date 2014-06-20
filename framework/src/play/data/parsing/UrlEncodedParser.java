@@ -4,10 +4,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import play.Logger;
 import play.Play;
 import play.exceptions.UnexpectedException;
@@ -73,7 +75,7 @@ public class UrlEncodedParser extends DataParser {
             //
             // NB: _charset_ must always be used with accept-charset and it must have the same value
 
-            String[] keyValues = data.split("&");
+            String[] keyValues = StringUtils.split(data, '&');
 
 
             // to prevent the Play-server from being vulnerable to POST hash collision DOS-attack (Denial of Service through hash table multi-collisions),
@@ -86,7 +88,7 @@ public class UrlEncodedParser extends DataParser {
             for (String keyValue : keyValues) {
                 // split this key-value on the first '='
                 int i = keyValue.indexOf('=');
-                String key=null;
+                String key;
                 String value=null;
                 if ( i > 0) {
                     key = keyValue.substring(0,i);
@@ -119,17 +121,16 @@ public class UrlEncodedParser extends DataParser {
 
             // We're ready to decode the params
             Map<String, String[]> decodedParams = new LinkedHashMap<String, String[]>(params.size());
-            URLCodec codec = new URLCodec();
             for (Map.Entry<String, String[]> e : params.entrySet()) {
                 String key = e.getKey();
                 try {
-                    key = codec.decode(e.getKey(), charset);
+                    key = URLDecoder.decode(e.getKey(), charset);
                 } catch (Throwable z) {
                     // Nothing we can do about, ignore
                 }
                 for (String value : e.getValue()) {
                     try {
-                        Utils.Maps.mergeValueInMap(decodedParams, key, (value == null ? null : codec.decode(value, charset)));
+                        Utils.Maps.mergeValueInMap(decodedParams, key, (value == null ? null : URLDecoder.decode(value, charset)));
                     } catch (Throwable z) {
                         // Nothing we can do about, lets fill in with the non decoded value
                         Utils.Maps.mergeValueInMap(decodedParams, key, value);
