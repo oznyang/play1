@@ -8,11 +8,12 @@ then
     mvn release:prepare -Pplugin -Dtag=plugin-${rv} -DreleaseVersion=${rv} -DdevelopmentVersion=${rv}-SNAPSHOT
     git checkout plugin-${rv}
     mvn install -Pplugin
-    mvn release:clean -Pplugin
+    git clean -dfx
 
     git checkout scc
     git tag -d plugin-${rv}
     git reset --hard HEAD~2
+    mvn install -Pplugin
     mvn release:prepare -Dtag=play-${rv} -DreleaseVersion=${rv} -DdevelopmentVersion=${dv}-SNAPSHOT
     git checkout play-${rv}
     mvn deploy
@@ -21,3 +22,4 @@ then
 else
     echo "release.sh [releaseVersion] [developmentVersion]"
 fi
+
