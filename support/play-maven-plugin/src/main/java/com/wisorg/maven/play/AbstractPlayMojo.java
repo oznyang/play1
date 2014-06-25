@@ -67,7 +67,7 @@ public abstract class AbstractPlayMojo extends AbstractMojo {
                 int pos = artifactId.lastIndexOf("-");
                 String moduleName = pos == -1 ? artifactId : artifactId.substring(pos + 1);
                 File to = getPlayHomeDir("modules/" + moduleName);
-                extractArtifact(artifact, to, false);
+                extractArtifact(artifact, to, null, false);
                 if (!props.containsKey(moduleName)) {
                     props.setProperty(moduleName, to.getAbsolutePath());
                     changed = true;
@@ -91,23 +91,24 @@ public abstract class AbstractPlayMojo extends AbstractMojo {
             Artifact artifact = (Artifact) obj;
             if ("com.wisorg.playframework".equals(artifact.getGroupId()) && "zip".endsWith(artifact.getType())) {
                 if ("play".equals(artifact.getArtifactId()) && "resource".equals(artifact.getClassifier())) {
-                    extractArtifact(artifact, getPlayHome(), false);
+                    extractArtifact(artifact, getPlayHome(), "resources", false);
                 } else if ("play-documentation".equals(artifact.getArtifactId())) {
-                    extractArtifact(artifact, getPlayHomeDir("documentation"), false);
+                    extractArtifact(artifact, getPlayHomeDir("documentation"), null, false);
                 } else if ("testrunner".equals(artifact.getArtifactId())) {
-                    extractArtifact(artifact, getPlayHomeDir("modules/testrunner"), false);
+                    extractArtifact(artifact, getPlayHomeDir("modules/testrunner"), null, false);
                 } else if ("docviewer".equals(artifact.getArtifactId())) {
-                    extractArtifact(artifact, getPlayHomeDir("modules/docviewer"), false);
+                    extractArtifact(artifact, getPlayHomeDir("modules/docviewer"), null, false);
                 }
             }
         }
     }
 
-    private void extractArtifact(Artifact artifact, File dir, boolean forceClean) throws MojoExecutionException, IOException {
-        if (dir.exists()) {
+    private void extractArtifact(Artifact artifact, File dir, String tsCheckPath, boolean forceClean) throws MojoExecutionException, IOException {
+        File tsDir = tsCheckPath != null ? new File(dir, tsCheckPath) : dir;
+        if (tsDir.exists()) {
             if (forceClean) {
                 FileUtils.cleanDirectory(dir);
-            } else if (artifact.getFile().lastModified() <= dir.lastModified()) {
+            } else if (artifact.getFile().lastModified() <= tsDir.lastModified()) {
                 getLog().debug("Extract target dir [" + dir.getAbsolutePath() + "] is fresh, skip extract!");
                 return;
             }
