@@ -71,7 +71,7 @@ public class PlayCleanMojo extends AbstractMojo {
         }
         File baseDir = project.getBasedir();
         if (cleanAll || cleanTmp) {
-            deleteDirectory(new File(baseDir, "tmp"));
+            deleteDirectory(getPlayHomeDir("tmp"));
         }
         if (cleanAll || cleanPrecompiled) {
             deleteDirectory(new File(baseDir, "precompiled"));
@@ -93,5 +93,13 @@ public class PlayCleanMojo extends AbstractMojo {
                 getLog().info("Fail to delete directory [" + directory.getAbsolutePath() + "]", e);
             }
         }
+    }
+
+    private File getPlayHome() {
+        return new File(project.getBuild().getDirectory(), "play");
+    }
+
+    private File getPlayHomeDir(String name) {
+        return new File(getPlayHome(), name);
     }
 }
