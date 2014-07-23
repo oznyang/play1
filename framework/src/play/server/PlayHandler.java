@@ -656,19 +656,21 @@ public class PlayHandler extends SimpleChannelUpstreamHandler {
 
     protected static Map<String, Http.Cookie> getCookies(HttpRequest nettyRequest) {
         Map<String, Http.Cookie> cookies = new HashMap<String, Http.Cookie>(16);
-        String value = nettyRequest.getHeader(COOKIE);
-        if (value != null) {
-            Set<Cookie> cookieSet = new CookieDecoder().decode(value);
-            if (cookieSet != null) {
-                for (Cookie cookie : cookieSet) {
-                    Http.Cookie playCookie = new Http.Cookie();
-                    playCookie.name = cookie.getName();
-                    playCookie.path = cookie.getPath();
-                    playCookie.domain = cookie.getDomain();
-                    playCookie.secure = cookie.isSecure();
-                    playCookie.value = cookie.getValue();
-                    playCookie.httpOnly = cookie.isHttpOnly();
-                    cookies.put(playCookie.name, playCookie);
+        CookieDecoder decoder = new CookieDecoder();
+        for (String value : nettyRequest.headers().getAll(COOKIE)) {
+            if (value != null) {
+                Set<Cookie> cookieSet = decoder.decode(value);
+                if (cookieSet != null) {
+                    for (Cookie cookie : cookieSet) {
+                        Http.Cookie playCookie = new Http.Cookie();
+                        playCookie.name = cookie.getName();
+                        playCookie.path = cookie.getPath();
+                        playCookie.domain = cookie.getDomain();
+                        playCookie.secure = cookie.isSecure();
+                        playCookie.value = cookie.getValue();
+                        playCookie.httpOnly = cookie.isHttpOnly();
+                        cookies.put(playCookie.name, playCookie);
+                    }
                 }
             }
         }
