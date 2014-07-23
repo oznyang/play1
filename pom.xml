@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.wisorg.playframework</groupId>
     <artifactId>play-parent</artifactId>
-    <version>1.3.3-SNAPSHOT</version>
+    <version>1.3.3</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}</name>
     <description>Play Framework Parent</description>
@@ -22,7 +22,7 @@
     <scm>
         <url>http://dev.wisorg.com/fisheye/browse/play</url>
         <connection>scm:git:${project.scm.host}</connection>
-        <tag>HEAD</tag>
+        <tag>play-1.3.3</tag>
   </scm>
 
     <distributionManagement>
