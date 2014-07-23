@@ -147,3 +147,5 @@ samples-and-tests/zencontact/precompiled
 
 precompiled/
 target/
+lib/
+m.conf
