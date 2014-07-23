@@ -149,3 +149,4 @@ precompiled/
 target/
 lib/
 m.conf
+.*
