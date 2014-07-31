@@ -90,6 +90,12 @@ public class PlayDistMojo extends PlayPrecompileMojo {
     private boolean distAttachSource;
 
     /**
+     * Specifies whether or not to create the precompiled classes jar to the project
+     */
+    @Parameter(property = "distAttachJar", defaultValue = "false")
+    private boolean distAttachJar;
+
+    /**
      * Classifier to add to the source distribution file.
      */
     @Parameter(property = "play.distSourceClassifier", defaultValue = "sources")
@@ -124,6 +130,9 @@ public class PlayDistMojo extends PlayPrecompileMojo {
             }
             if (distAttachSource) {
                 sourcePackage();
+            }
+            if (distAttachJar) {
+                jarPackage();
             }
         } catch (NoSuchArchiverException e) {
             throw new MojoExecutionException("Dist error", e);
@@ -300,6 +309,20 @@ public class PlayDistMojo extends PlayPrecompileMojo {
         zipArchiver.setDestFile(destFile);
         zipArchiver.createArchive();
         projectHelper.attachArtifact(project, "zip", distSourceClassifier, destFile);
+    }
+
+    private void jarPackage() throws NoSuchArchiverException, IOException {
+        ZipArchiver zipArchiver = (ZipArchiver) archiverManager.getArchiver("zip");
+        zipArchiver.setDuplicateBehavior(Archiver.DUPLICATES_SKIP);
+        zipArchiver.setIncludeEmptyDirs(false);
+        File baseDir = project.getBasedir();
+
+        zipArchiver.addDirectory(new File(baseDir, "precompiled/java"), null, new String[]{"**/.*"});
+
+        File destFile = new File(distOutputDirectory, distArchiveName + ".jar");
+        zipArchiver.setDestFile(destFile);
+        zipArchiver.createArchive();
+        projectHelper.attachArtifact(project, "jar", null, destFile);
     }
 
     public String getDistFileName(String classifier) {
