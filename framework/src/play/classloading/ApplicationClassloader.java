@@ -141,6 +141,9 @@ public class ApplicationClassloader extends ClassLoader {
                     if (Play.usePrecompiled || javaFile == null || javaFile.lastModified() < classFile.lastModified()) {
                         return loadPrecompiledClass(applicationClass);
                     }
+                    if (javaFile != null && applicationClass.javaSource == null) {
+                        applicationClass.javaSource = applicationClass.javaFile.contentAsString();
+                    }
                 }
             }
         } else {
